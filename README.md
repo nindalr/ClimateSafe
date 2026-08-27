@@ -7,7 +7,7 @@
 - **Ketua Kelompok:** [Nama Ketua]
 - **Anggota 1:** Nathanael Satya Saputra
 - **Anggota 2:** Zahra Elfatima
-- **Anggota 3:** Ninda Alifa Rachmayanti
+- **Anggota 3:** Ninda Alifa Rachmayanti - 24/545484/TK/60679
 
 ClimateSafe is a desktop-based application that helps users assess their
 preparedness for selected climate-related hazards, identify areas for
