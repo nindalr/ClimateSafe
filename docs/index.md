@@ -5,9 +5,9 @@ Kelompok 17
 
 ## Anggota dan NIM Kelompok
 - **Ketua Kelompok:** Nathanael Satya Saputra 
-- **Nathanael Satya Saputra** – 24/534424/TK/59236 (Backend Developer)
-- **Zahra Elfatima** – 24/535709/TK/59448 (Frontend Developer)
-- **Ninda Alifa Rachmayanti** – 24/545484/TK/60679 (Software Architect)
+- **Anggota 1: Nathanael Satya Saputra** – 24/534424/TK/59236 (Backend Developer)
+- **Anggota 2: Zahra Elfatima** – 24/535709/TK/59448 (Frontend Developer)
+- **Anggota 3: Ninda Alifa Rachmayanti** – 24/545484/TK/60679 (Software Architect)
 
 ## Project Senior Project TI
 
