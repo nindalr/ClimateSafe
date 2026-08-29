@@ -2,11 +2,11 @@
 
 ### Personal Climate Disaster Preparedness Assessment & Action Planner
 
-**Kelompok**
+**Kelompok 17**
 
-- **Ketua Kelompok:** [Nama Ketua]
+- **Ketua Kelompok:** Nathanael Satya Saputra
 - **Anggota 1:** Nathanael Satya Saputra
-- **Anggota 2:** Zahra Elfatima
+- **Anggota 2:** Zahra Elfatima - 24/535709/TK/59448
 - **Anggota 3:** Ninda Alifa Rachmayanti - 24/545484/TK/60679
 
 ClimateSafe is a desktop-based application that helps users assess their
