@@ -12,3 +12,5 @@
 ClimateSafe is a desktop-based application that helps users assess their
 preparedness for selected climate-related hazards, identify areas for
 improvement, and take appropriate preparedness actions.
+
+<img width="683" height="1154" alt="image" src="https://github.com/user-attachments/assets/5b9b892a-1113-48b4-88b7-7400b77ecbd3" />
