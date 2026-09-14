@@ -1,0 +1,9 @@
+D:\JUNPROO\ClimateSafe\ClimateSafe\bin\Debug\ClimateSafe.exe.config
+D:\JUNPROO\ClimateSafe\ClimateSafe\bin\Debug\ClimateSafe.exe
+D:\JUNPROO\ClimateSafe\ClimateSafe\bin\Debug\ClimateSafe.pdb
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.csproj.AssemblyReference.cache
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.Properties.Resources.resources
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.csproj.GenerateResource.cache
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.csproj.CoreCompileInputs.cache
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.exe
+D:\JUNPROO\ClimateSafe\ClimateSafe\obj\Debug\ClimateSafe.pdb
