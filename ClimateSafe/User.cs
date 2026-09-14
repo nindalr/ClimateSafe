@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -20,30 +17,17 @@ namespace ClimateSafe
             _assessments = new List<Assessment>();
         }
 
-        public void PerformAssessment(Assessment assessment)
+        public void PerformAssessment()
         {
-            if (assessment == null)
-            {
-                return;
-            }
-
-            if (!_assessments.Contains(assessment))
-            {
-                _assessments.Add(assessment);
-            }
         }
 
         public List<Assessment> ViewHistory()
         {
-            return new List<Assessment>(_assessments);
+            return _assessments;
         }
 
         public void UpdateChecklist(int itemId)
         {
-            foreach (Assessment assessment in _assessments)
-            {
-                assessment.CompleteChecklistItem(itemId);
-            }
         }
     }
 }

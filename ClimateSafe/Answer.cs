@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace ClimateSafe
 {
@@ -11,8 +7,7 @@ namespace ClimateSafe
         private int _answerId;
         private string _value;
         private int _score;
-
-        private readonly Question _question;
+        private Question _question;
 
         public Answer(
             int answerId,
@@ -44,14 +39,15 @@ namespace ClimateSafe
             set { _score = value; }
         }
 
-        public int CalculateScore()
-        {
-            return _score;
-        }
-
         public Question Question
         {
             get { return _question; }
+            set { _question = value; }
+        }
+
+        public int CalculateScore()
+        {
+            return _score;
         }
     }
 }

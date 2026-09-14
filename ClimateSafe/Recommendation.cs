@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -44,22 +41,9 @@ namespace ClimateSafe
             set { _priority = value; }
         }
 
-        public void AddChecklistItem(ChecklistItem item)
+        public List<ChecklistItem> ChecklistItems
         {
-            if (item == null)
-            {
-                return;
-            }
-
-            if (!_checklistItems.Contains(item))
-            {
-                _checklistItems.Add(item);
-            }
-        }
-
-        public IReadOnlyList<ChecklistItem> GetChecklistItems()
-        {
-            return _checklistItems.AsReadOnly();
+            get { return _checklistItems; }
         }
     }
 }

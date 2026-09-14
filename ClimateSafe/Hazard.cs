@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -34,20 +31,12 @@ namespace ClimateSafe
 
         public List<Question> GetQuestions()
         {
-            return new List<Question>(_questions);
+            return _questions;
         }
 
-        public void AddQuestion(Question question)
+        public List<Question> Questions
         {
-            if (question == null)
-            {
-                return;
-            }
-
-            if (!_questions.Contains(question))
-            {
-                _questions.Add(question);
-            }
+            get { return _questions; }
         }
     }
 }

@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -37,43 +34,22 @@ namespace ClimateSafe
 
         public double CalculateScore(Assessment assessment)
         {
-            if (assessment == null)
-            {
-                return 0.0;
-            }
-
-            return assessment.CalculateOverallScore();
+            return 0.0;
         }
 
         public bool IdentifyGap(double score)
         {
-            return score < 75.0;
+            return false;
         }
 
-        public void AddQuestion(Question question)
+        public List<Question> Questions
         {
-            if (question == null)
-            {
-                return;
-            }
-
-            if (!_questions.Contains(question))
-            {
-                _questions.Add(question);
-            }
+            get { return _questions; }
         }
 
-        public void AddRecommendation(Recommendation recommendation)
+        public List<Recommendation> Recommendations
         {
-            if (recommendation == null)
-            {
-                return;
-            }
-
-            if (!_recommendations.Contains(recommendation))
-            {
-                _recommendations.Add(recommendation);
-            }
+            get { return _recommendations; }
         }
     }
 }

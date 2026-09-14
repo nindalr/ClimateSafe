@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace ClimateSafe
 {
@@ -49,15 +45,13 @@ namespace ClimateSafe
             set { _passwordHash = value; }
         }
 
-        public virtual bool Login(string email, string passwordHash)
+        public virtual bool Login()
         {
-            return _email == email && _passwordHash == passwordHash;
+            return false;
         }
 
         public virtual void Logout()
         {
-            // Logout behavior can be connected to the application's
-            // authentication/session management.
         }
     }
 }
