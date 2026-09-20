@@ -14,3 +14,6 @@ preparedness for selected climate-related hazards, identify areas for
 improvement, and take appropriate preparedness actions.
 
 <img width="683" height="1154" alt="image" src="https://github.com/user-attachments/assets/5b9b892a-1113-48b4-88b7-7400b77ecbd3" />
+
+<img width="1092" height="857" alt="ERD ClimateSafe Junpro" src="https://github.com/user-attachments/assets/17f1acf8-f5f0-4f52-9e26-2aad0d7b3ccd" />
+
