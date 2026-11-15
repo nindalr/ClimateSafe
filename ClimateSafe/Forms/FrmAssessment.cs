@@ -149,7 +149,8 @@ namespace ClimateSafe
 
         private int hazardIdx = 0;
         private int currentQ = 0;
-        private readonly int[] answers = { 0, -1, -1, -1, -1 };
+        private readonly int[] answers = { -1, -1, -1, -1, -1 };
+        private readonly AssessmentScoringService scoringService = new AssessmentScoringService();
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
 
@@ -195,6 +196,22 @@ namespace ClimateSafe
         {
             BuildAssessment();
             Nav.Register(this);
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (Visible && asBuilt)
+            {
+                ResetAnswers();
+                RefreshQuestion();
+            }
+        }
+
+        private void ResetAnswers()
+        {
+            Array.Fill(answers, -1);
+            currentQ = 0;
         }
 
         private void BuildAssessment()
@@ -642,6 +659,7 @@ namespace ClimateSafe
 
         private void SelectHazard(int index)
         {
+            if (hazardIdx != index) ResetAnswers();
             hazardIdx = index;
             for (int k = 0; k < 3; k++)
             {
@@ -821,14 +839,12 @@ namespace ClimateSafe
                 Info("Pilih satu jawaban terlebih dahulu.");
                 return;
             }
-
             if (currentQ < 4)
             {
                 currentQ++;
                 RefreshQuestion();
                 return;
             }
-
             for (int i = 0; i < answers.Length; i++)
             {
                 if (answers[i] < 0)
@@ -838,14 +854,23 @@ namespace ClimateSafe
                 }
             }
 
-            int score = 0;
-            for (int i = 0; i < answers.Length; i++)
+            try
             {
-                score += (3 - answers[i]) * 20 / 3;
+                string[] questions = Array.ConvertAll(questionText,
+                    text => string.Format(text, hazardLower[hazardIdx]));
+                Assessment assessment = scoringService.Evaluate(questions, answerText, answers);
+                Info("Asesmen " + hazardNames[hazardIdx] + " selesai.\nSkor kesiapan kamu: " +
+                    assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level);
+                Nav.ShowDashboard(this);
             }
-            score = Math.Min(100, score);
-            Info("Asesmen " + hazardNames[hazardIdx] + " selesai.\nSkor kesiapan kamu: " + score + "/100");
-            Nav.ShowDashboard(this);
+            catch (ArgumentException ex)
+            {
+                Info(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                Info(ex.Message);
+            }
         }
 
         private void BuildDimensions(Panel host)
