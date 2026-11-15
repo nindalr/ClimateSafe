@@ -27,7 +27,9 @@ namespace ClimateSafe
 
         public override Form CreateMainForm()
         {
-            return new FormUserDashboard(this);
+            Session.CurrentUser = this;   // isi dulu sebelum dashboard dibuat
+            Nav.Reset();                  // buang dashboard lama (cache) kalau ganti akun
+            return new FrmDashboard();
         }
 
         internal void PerformAssessment(Assessment assessment)
