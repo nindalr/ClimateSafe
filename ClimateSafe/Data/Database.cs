@@ -5,7 +5,7 @@ namespace ClimateSafe.Auth
     public static class Database
     {
         private const string ConnString =
-            "Host=localhost;Port=5432;Username=postgres;Password=GANTI_PASSWORD_ANDA;Database=climatesafe";
+            "Host=localhost;Port=5432;Username=postgres;Password=eskrimenak;Database=climatesafe";
 
         public static NpgsqlConnection Create()
         {

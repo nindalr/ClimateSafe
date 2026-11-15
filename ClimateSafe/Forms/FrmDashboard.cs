@@ -586,6 +586,16 @@ namespace ClimateSafe
             SwitchTo(assessment, from);
         }
 
+        // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
+        public static void Reset()
+        {
+            if (dashboard != null && !dashboard.IsDisposed) dashboard.Hide();
+            if (assessment != null && !assessment.IsDisposed) assessment.Hide();
+            dashboard = null;
+            assessment = null;
+            quitting = false;
+        }
+
         private static void SwitchTo(Form target, Form from)
         {
             if (target == from) return;
@@ -989,17 +999,17 @@ namespace ClimateSafe
             RoundPanel user = Card(bottom, 16, 65, 223, 57, 12, Color.White, line);
 
             RoundPanel avatar = Card(user, 8, 9, 38, 38, 19, coralSoft, Color.Empty);
-            AddAligned(avatar, "NR", 0, 0, 38, 38, 8.5f, true, coral, ContentAlignment.MiddleCenter);
+            AddAligned(avatar, Session.Initials, 0, 0, 38, 38, 8.5f, true, coral, ContentAlignment.MiddleCenter);
 
-            AddText(user, "Nia Ratnadewi", 55, 10, 140, 18, 8.5f, true, ink);
+            AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
             RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, "User", 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
 
             AddChevron(user, 196, 20, muted);
             MakeClickable(user, delegate (object sender, EventArgs e)
             {
-                Info("Profil: Nia Ratnadewi (User)");
+                Info("Profil: " + Session.DisplayName + " (" + Session.RoleText + ")");
             });
         }
 
@@ -1024,7 +1034,7 @@ namespace ClimateSafe
                 Color.FromArgb(222, 230, 240));
             dashHeader.Decorate = DrawHeaderArt;
 
-            AddText(dashHeader, "Halo, Nia", 28, 36, 400, 42, 20f, true, titleBlue);
+            AddText(dashHeader, "Halo, " + Session.FirstName, 28, 36, 400, 42, 20f, true, titleBlue);
             AddText(dashHeader,
                 "Yuk, pastikan kamu dan orang-orang di sekitarmu siap menghadapi bencana.",
                 28, 80, 480, 50, 11f, false, muted);
