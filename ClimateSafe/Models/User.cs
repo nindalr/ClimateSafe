@@ -1,26 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Windows.Forms;
+using ClimateSafe.Auth;
 
 namespace ClimateSafe
 {
-    internal class User : UserAccount
+    // INHERITANCE
+    public class User : UserAccount
     {
         private readonly List<Assessment> _assessments;
 
-        public User(
-            int userId,
-            string name,
-            string email,
-            string passwordHash)
+        // Constructor lengkap (dari database)
+        public User(int id, string name, string email, string hash,
+                    string role, string status, DateTime createdAt)
+            : base(id, name, email, hash, role, status, createdAt)
+        {
+            _assessments = new List<Assessment>();
+        }
+
+        // Constructor ringkas (kode ClimateSafe lama)
+        public User(int userId, string name, string email, string passwordHash)
             : base(userId, name, email, passwordHash)
         {
             _assessments = new List<Assessment>();
         }
 
-        public void PerformAssessment(Assessment assessment)
+        public override Form CreateMainForm()
+        {
+            return new FormUserDashboard(this);
+        }
+
+        internal void PerformAssessment(Assessment assessment)
         {
             if (assessment == null)
             {
@@ -33,7 +43,7 @@ namespace ClimateSafe
             }
         }
 
-        public List<Assessment> ViewHistory()
+        internal List<Assessment> ViewHistory()
         {
             return new List<Assessment>(_assessments);
         }
