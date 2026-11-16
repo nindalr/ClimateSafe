@@ -13,8 +13,25 @@ namespace ClimateSafe
             IReadOnlyList<int> selectedAnswers)
         {
             ArgumentNullException.ThrowIfNull(questions);
+            var hazard = new Hazard(0, string.Empty);
+            for (int i = 0; i < questions.Count; i++)
+            {
+                hazard.AddQuestion(new Question(i + 1, questions[i]));
+            }
+
+            return Evaluate(hazard, answerOptions, selectedAnswers);
+        }
+
+        public Assessment Evaluate(
+            Hazard hazard,
+            IReadOnlyList<string[]> answerOptions,
+            IReadOnlyList<int> selectedAnswers)
+        {
+            ArgumentNullException.ThrowIfNull(hazard);
             ArgumentNullException.ThrowIfNull(answerOptions);
             ArgumentNullException.ThrowIfNull(selectedAnswers);
+
+            List<Question> questions = hazard.GetQuestions();
 
             if (questions.Count == 0 || questions.Count != answerOptions.Count ||
                 questions.Count != selectedAnswers.Count)
@@ -33,7 +50,8 @@ namespace ClimateSafe
                         "pertanyaan dengan satu pilihan yang valid.");
                 }
 
-                if (string.IsNullOrWhiteSpace(questions[i]) || answerOptions[i] == null ||
+                if (string.IsNullOrWhiteSpace(questions[i].QuestionText) || 
+                    answerOptions[i] == null ||
                     answerOptions[i].Length != AnswerWeights.Length ||
                     string.IsNullOrWhiteSpace(answerOptions[i][selected]))
                 {
@@ -41,7 +59,7 @@ namespace ClimateSafe
                         "jawaban harus tersedia dengan benar.");
                 }
 
-                Question question = new Question(i + 1, questions[i]);
+                Question question = questions[i];
                 assessment.SubmitAnswer(new Answer(i + 1, answerOptions[i][selected],
                     AnswerWeights[selected], question));
             }
