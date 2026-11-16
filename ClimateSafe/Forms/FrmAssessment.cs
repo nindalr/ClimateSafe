@@ -864,8 +864,13 @@ namespace ClimateSafe
                 }
 
                 Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
+                IReadOnlyList<string> gaps = scoringService.IdentifyGaps(assessment, dimNames);
+                string gapSummary = gaps.Count == 0
+                    ? "Semua dimensi sudah memenuhi ambang kesiapan."
+                    : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ", gaps);
                 Info("Asesmen " + hazard.Name + " selesai.\nSkor kesiapan kamu: " +
-                    assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level);
+                    assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level +
+                    "\n\n" + gapSummary);
                 Nav.ShowDashboard(this);
             }
             catch (ArgumentException ex)

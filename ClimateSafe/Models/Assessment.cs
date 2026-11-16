@@ -118,12 +118,17 @@ namespace ClimateSafe
 
             if (answer.Question == null)
             {
-                throw new ArgumentException("Jawaban harus memiliki pertanyaan.", nameof(answer));
+                throw new ArgumentException(
+                    "Jawaban harus memiliki pertanyaan.",
+                     nameof(answer)
+                     );
             }
 
             ValidateScore(answer.Score);
 
-            if (_answers.Any(existing => existing.Question.QuestionId == answer.Question.QuestionId))
+            if (_answers.Any(existing => 
+                existing.Question.QuestionId 
+                == answer.Question.QuestionId))
             {
                 throw new InvalidOperationException("Pertanyaan ini sudah dijawab.");
             }
