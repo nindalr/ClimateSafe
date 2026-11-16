@@ -866,13 +866,20 @@ namespace ClimateSafe
 
                 Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
                 IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(assessment, dimNames);
+                var recommendationService = new RecommendationService();
+                IReadOnlyList<Recommendation> recommendations =
+                    recommendationService.GenerateRecommendations(hazard, gaps);
                 string gapSummary = gaps.Count == 0
                     ? "Semua dimensi sudah memenuhi ambang kesiapan."
                     : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ",
                         gaps.Select(gap => gap.DimensionName + " : " + gap.Score.ToString("0.##") + "/100"));
+                string recommendationSummary = recommendations.Count == 0
+                    ? ""
+                    : "\n\nRekomendasi persiapan:\n• " + string.Join("\n• ",
+                        recommendations.Select(item => "[" + item.Priority + "] " + item.Description));
                 Info("Asesmen " + hazard.Name + " selesai.\nSkor kesiapan kamu: " +
                     assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level +
-                    "\n\n" + gapSummary);
+                    "\n\n" + gapSummary + recommendationSummary);
                 Nav.ShowDashboard(this);
             }
             catch (ArgumentException ex)
