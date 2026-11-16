@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -864,10 +865,11 @@ namespace ClimateSafe
                 }
 
                 Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
-                IReadOnlyList<string> gaps = scoringService.IdentifyGaps(assessment, dimNames);
+                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(assessment, dimNames);
                 string gapSummary = gaps.Count == 0
                     ? "Semua dimensi sudah memenuhi ambang kesiapan."
-                    : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ", gaps);
+                    : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ",
+                        gaps.Select(gap => gap.DimensionName + " : " + gap.Score.ToString("0.##") + "/100"));
                 Info("Asesmen " + hazard.Name + " selesai.\nSkor kesiapan kamu: " +
                     assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level +
                     "\n\n" + gapSummary);
