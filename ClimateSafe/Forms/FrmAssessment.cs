@@ -856,10 +856,15 @@ namespace ClimateSafe
 
             try
             {
-                string[] questions = Array.ConvertAll(questionText,
-                    text => string.Format(text, hazardLower[hazardIdx]));
-                Assessment assessment = scoringService.Evaluate(questions, answerText, answers);
-                Info("Asesmen " + hazardNames[hazardIdx] + " selesai.\nSkor kesiapan kamu: " +
+                var hazard = new Hazard(hazardIdx + 1, hazardNames[hazardIdx]);
+                for (int i = 0; i < questionText.Length; i++)
+                {
+                    hazard.AddQuestion(new Question(i + 1,
+                        string.Format(questionText[i], hazardLower[hazardIdx])));
+                }
+
+                Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
+                Info("Asesmen " + hazard.Name + " selesai.\nSkor kesiapan kamu: " +
                     assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level);
                 Nav.ShowDashboard(this);
             }
