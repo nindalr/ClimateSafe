@@ -1,11 +1,46 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ClimateSafe
 {
     internal sealed class AssessmentScoringService
     {
         private static readonly int[] AnswerWeights = { 3, 2, 1, 0 };
+
+        public IReadOnlyList<string> IdentifyGaps(
+            Assessment assessment, IReadOnlyList<string> dimensionNames)
+        {
+            ArgumentNullException.ThrowIfNull(assessment);
+            ArgumentNullException.ThrowIfNull(dimensionNames);
+
+            var answers = assessment.GetAnswers()
+                .ToDictionary(answer => answer.Question.QuestionId);
+            if (dimensionNames.Count == 0 || dimensionNames.Count != answers.Count)
+            {
+                throw new ArgumentException("Jumlah dimensi harus sesuai dengan pertanyaan asesmen.");
+            }
+
+            var gaps = new List<string>();
+            for (int i = 0; i < dimensionNames.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(dimensionNames[i]) ||
+                    !answers.TryGetValue(i + 1, out Answer answer))
+                {
+                    throw new ArgumentException("Nama dimensi dan pertanyaan terkait harus tersedia.");
+                }
+
+                var dimension = new PreparednessDimension(i + 1, dimensionNames[i]);
+                dimension.AddQuestion(answer.Question);
+                double score = dimension.CalculateScore(assessment);
+                if (dimension.IdentifyGap(score))
+                {
+                    gaps.Add(dimension.Name + " : " + score.ToString("0.##") + "/100");
+                }
+            }
+
+            return gaps.AsReadOnly();
+        }
 
         public Assessment Evaluate(
             IReadOnlyList<string> questions,

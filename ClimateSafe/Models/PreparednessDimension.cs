@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -10,14 +8,23 @@ namespace ClimateSafe
     {
         private int _dimensionId;
         private string _name;
+        private const int MaximumAnswerScore = 3;
+        private readonly double _passingThreshold;
 
         private readonly List<Question> _questions;
         private readonly List<Recommendation> _recommendations;
 
-        public PreparednessDimension(int dimensionId, string name)
+        public PreparednessDimension(int dimensionId, string name, double passingThreshold = 75.0)
         {
+            if (!double.IsFinite(passingThreshold) || passingThreshold <= 0 || passingThreshold > 100)
+            {
+                throw new ArgumentOutOfRangeException(nameof(passingThreshold),
+                    "Ambang dimensi harus lebih dari 0 dan maksimal 100.");
+            }
+
             _dimensionId = dimensionId;
             _name = name;
+            _passingThreshold = passingThreshold;
 
             _questions = new List<Question>();
             _recommendations = new List<Recommendation>();
@@ -37,17 +44,33 @@ namespace ClimateSafe
 
         public double CalculateScore(Assessment assessment)
         {
-            if (assessment == null)
+            ArgumentNullException.ThrowIfNull(assessment);
+            if (_questions.Count == 0)
             {
-                return 0.0;
+                throw new InvalidOperationException("Dimensi belum memiliki pertanyaan.");
             }
 
-            return assessment.CalculateOverallScore();
+            var questionIds = _questions.Select(question => question.QuestionId).ToHashSet();
+            var answers = assessment.GetAnswers()
+                .Where(answer => questionIds.Contains(answer.Question.QuestionId)).ToList();
+            if (answers.Count != questionIds.Count)
+            {
+                throw new InvalidOperationException("Jawaban untuk dimensi belum lengkap.");
+            }
+
+            return (double)answers.Sum(answer => answer.CalculateScore()) /
+                (questionIds.Count * MaximumAnswerScore) * 100.0;
         }
 
         public bool IdentifyGap(double score)
         {
-            return score < 75.0;
+            if (!double.IsFinite(score) || score < 0 || score > 100)
+            {
+                throw new ArgumentOutOfRangeException(nameof(score),
+                    "Skor dimensi harus berada dalam rentang 0 sampai 100.");
+            }
+
+            return score < _passingThreshold;
         }
 
         public void AddQuestion(Question question)
