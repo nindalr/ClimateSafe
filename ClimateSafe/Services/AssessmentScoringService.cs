@@ -8,7 +8,7 @@ namespace ClimateSafe
     {
         private static readonly int[] AnswerWeights = { 3, 2, 1, 0 };
 
-        public IReadOnlyList<string> IdentifyGaps(
+        public IReadOnlyList<DimensionGap> IdentifyGaps(
             Assessment assessment, IReadOnlyList<string> dimensionNames)
         {
             ArgumentNullException.ThrowIfNull(assessment);
@@ -21,7 +21,7 @@ namespace ClimateSafe
                 throw new ArgumentException("Jumlah dimensi harus sesuai dengan pertanyaan asesmen.");
             }
 
-            var gaps = new List<string>();
+            var gaps = new List<DimensionGap>();
             for (int i = 0; i < dimensionNames.Count; i++)
             {
                 if (string.IsNullOrWhiteSpace(dimensionNames[i]) ||
@@ -35,7 +35,7 @@ namespace ClimateSafe
                 double score = dimension.CalculateScore(assessment);
                 if (dimension.IdentifyGap(score))
                 {
-                    gaps.Add(dimension.Name + " : " + score.ToString("0.##") + "/100");
+                    gaps.Add(new DimensionGap(dimension.DimensionId, dimension.Name, score));
                 }
             }
 
