@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace ClimateSafe
@@ -586,6 +587,18 @@ namespace ClimateSafe
             SwitchTo(assessment, from);
         }
 
+        public static void ShowChecklist(Form from)
+        {
+            if (Session.CurrentUser == null)
+            {
+                MessageBox.Show(from, "Silakan login untuk membuka checklist.", "Checklist");
+                return;
+            }
+            using var checklist = new FrmChecklist(Session.CurrentUser.UserId);
+            checklist.ShowDialog(from);
+            if (from is FrmDashboard dashboardForm) dashboardForm.RefreshSavedData();
+        }
+
         // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
         public static void Reset()
         {
@@ -654,12 +667,48 @@ namespace ClimateSafe
         private RoundPanel cardPriority;
         private RoundPanel dashFooter;
         private bool dashBuilt;
+        private ChecklistSession? latestSession;
+        private readonly ChecklistService checklistService;
 
-        public FrmDashboard()
+        public FrmDashboard() : this(new ChecklistService())
         {
+        }
+
+        internal FrmDashboard(ChecklistService checklistService)
+        {
+            this.checklistService = checklistService;
             InitializeComponent();
             BuildDashboard();
             Nav.Register(this);
+        }
+
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (Visible && dashBuilt) RefreshSavedData();
+        }
+
+        internal void RefreshSavedData()
+        {
+            try
+            {
+                latestSession = Session.CurrentUser == null ? null
+                    : checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
+                dashPage.SuspendLayout();
+                cardScore.Dispose();
+                cardChecklist.Dispose();
+                cardPriority.Dispose();
+                BuildScoreCard(dashPage);
+                BuildChecklist(dashPage);
+                BuildPriorities(dashPage);
+                LayoutPage();
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                    "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally { dashPage.ResumeLayout(true); }
         }
 
         private void BuildDashboard()
@@ -963,6 +1012,10 @@ namespace ClimateSafe
                     {
                         Nav.ShowAssessment(this);
                     }
+                    else if (nama == "Checklist")
+                    {
+                        Nav.ShowChecklist(this);
+                    }
                     else if (nama != "Beranda")
                     {
                         Info("Menu " + nama + " dibuka.");
@@ -1156,24 +1209,24 @@ namespace ClimateSafe
                 Color.White, Color.FromArgb(253, 236, 231), 45f, line);
             cardScore = card;
 
-            AddText(card, "Skor Kesiapan Terakhir", 20, 22, 260, 20, 10.5f, true, ink);
+            AddText(card, "Skor Kesiapan Terakhir", 20, 22, 280, 30, 10.5f, true, ink);
 
             RoundPanel circle = Card(card, 25, 71, 54, 54, 27, coral, Color.Empty);
             AddSymbol(circle, "\u2714", 0, 0, 54, 54, 20f, Color.White);
 
-            Label scoreBig = AddAligned(card, "72", 98, 54, 120, 56, 30f, true, ink, ContentAlignment.MiddleLeft);
-            int scoreW = TextRenderer.MeasureText("72", scoreBig.Font,
-                new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
-            scoreBig.Width = scoreW + 20;
+            string scoreText = latestSession?.OverallScore.ToString("0.##") ?? "—";
+            Label scoreBig = AddAligned(card, scoreText, 98, 54, 120, 56, 30f, true, ink, ContentAlignment.MiddleLeft);
+            scoreBig.AutoSize = true;
+            int scoreW = scoreBig.PreferredWidth;
             AddAligned(card, "/100", 98 + scoreW + 22, 74, 70, 38, 12f, false, muted, ContentAlignment.MiddleLeft);
 
-            RoundPanel pill = Card(card, 100, 112, 104, 24, 12, coralSoft, Color.FromArgb(248, 205, 195));
-            AddAligned(pill, "\u2191 Cukup Siap", 0, 0, 104, 24, 8.5f, true, coral,
+            RoundPanel pill = Card(card, 100, 136, 145, 28, 12, coralSoft, Color.FromArgb(248, 205, 195));
+            AddAligned(pill, latestSession?.Level ?? "Belum ada asesmen", 0, 0, 145, 24, 8.5f, true, coral,
                 ContentAlignment.MiddleCenter);
 
             Stretch(Divider(card, 20, 206, C3 - 40), card, 20, 20);
             AddText(card, "Terakhir diperbarui:", 20, 218, 150, 18, 8.5f, false, muted);
-            Label date = AddAligned(card, "12 Okt 2026", C3 - 20 - 141, 218, 141, 18, 8.5f, false, ink,
+            Label date = AddAligned(card, latestSession?.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") ?? "—", C3 - 20 - 141, 218, 141, 18, 8.5f, false, ink,
                 ContentAlignment.TopRight);
             PinRight(date, card, 20);
         }
@@ -1286,22 +1339,22 @@ namespace ClimateSafe
             cardChecklist = card;
 
             IconBox(card, "\u2611", 20, 23, 28, iconBlue, navy);
-            AddText(card, "Progress Checklist Persiapan", 62, 23, 330, 20, 10.5f, true, ink);
-            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 43, 360, 16, 8.5f, false, muted);
+            AddText(card, "Progress Checklist Persiapan", 62, 23, 360, 30, 10.5f, true, ink);
+            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 8.5f, false, muted);
 
             Label seeAll = AddAligned(card, "Lihat Semua  \u203A", ChecklistW - 22 - 125, 28, 125, 20, 8.5f,
                 false, coral, ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
             {
-                Info("Menampilkan seluruh checklist.");
+                Nav.ShowChecklist(this);
             };
             PinRight(seeAll, card, 22);
 
             CircleProgress cp = new CircleProgress();
             cp.Bounds = new Rectangle(55, 109, 100, 100);
-            cp.Percent = 60;
-            cp.MainText = "6/10";
+            cp.Percent = latestSession == null ? 0 : (int)Math.Round(latestSession.Progress);
+            cp.MainText = (latestSession?.CompletedCount ?? 0) + "/" + (latestSession?.Items.Count ?? 0);
             cp.SubText = "SELESAI";
             cp.Accent = blue;
             cp.TrackColor = Color.FromArgb(226, 234, 245);
@@ -1309,21 +1362,29 @@ namespace ClimateSafe
             cp.MutedColor = muted;
             card.Controls.Add(cp);
 
-            AddAligned(card, "60% Kesiapan Dasar Tercapai", 20, 222, 170, 18, 8.5f, false, muted,
+            AddAligned(card, (latestSession?.Progress ?? 0).ToString("0.#") + "% tindakan selesai", 20, 222, 185, 30, 8.5f, false, muted,
                 ContentAlignment.TopCenter);
 
-            AddBarRow(card, 92, "Perlengkapan Darurat", "2/3", 2f / 3f, blue);
-            AddBarRow(card, 134, "Jalur Evakuasi", "1/2", 0.5f, coral);
-            AddBarRow(card, 176, "Kontak Darurat", "2/2 (Lengkap)", 1f, blue);
-            AddBarRow(card, 218, "Rencana Logistik", "1/2", 0.5f, coral);
+            Label hazardTitle = AddText(card, latestSession?.HazardName ?? "Belum ada asesmen", 213, 108, 380, 28, 12, true, ink);
+            Stretch(hazardTitle, card, 213, 20);
+            Label checklistHint = AddText(card, latestSession == null ? "Mulai asesmen untuk membuat checklist persiapan."
+                : latestSession.Items.Count == 0 ? "Tidak ada tindakan yang dihasilkan untuk sesi ini."
+                : "Buka checklist untuk menandai tindakan yang sudah dikerjakan.",
+                213, 148, 370, 65, 9, false, muted);
+            Stretch(checklistHint, card, 213, 20);
 
             Stretch(Divider(card, 20, 269, ChecklistW - 40), card, 20, 20);
             AddText(card, "TUGAS SIAGA TERKINI", 20, 286, 300, 16, 7.5f, true, muted);
 
-            AddTask(card, 314, "Siapkan tas siaga darurat (Survival Kit)", "10 Okt 2026", 0, true);
-            AddTask(card, 360, "Cek jalur evakuasi terdekat lingkungan RW", "9 Okt 2026", 0, true);
-            AddTask(card, 410, "Simpan dokumen penting di kantong anti-air", "Perlu Segera", 1, false);
-            AddTask(card, 462, "Ikuti pembaruan cuaca BMKG berkala", "Harian", 2, false);
+            var recentItems = latestSession?.Items.Take(3).ToList();
+            if (recentItems != null)
+                for (int i = 0; i < recentItems.Count; i++)
+                {
+                    ChecklistItem item = recentItems[i];
+                    Label action = AddText(card, (item.IsCompleted ? "✓ " : "☐ ") + item.Description,
+                        24, 318 + i * 62, ChecklistW - 48, 56, 9, false, item.IsCompleted ? muted : ink);
+                    Stretch(action, card, 24, 24);
+                }
         }
 
         private void AddBarRow(RoundPanel parent, int y, string label, string value,
@@ -1409,28 +1470,29 @@ namespace ClimateSafe
             cardPriority = card;
 
             IconBox(card, "\u26A0", 20, 31, 28, coralSoft, coral);
-            AddText(card, "Prioritas Utama", 64, 23, 300, 20, 10.5f, true, ink);
+            AddText(card, "Prioritas Utama", 64, 23, 300, 30, 10.5f, true, ink);
             AddText(card, "Dari hasil asesmen terakhir, yang perlu Anda perhatikan:",
-                64, 43, 270, 32, 8.5f, false, muted);
+                64, 55, 300, 32, 8.5f, false, muted);
 
             Stretch(Divider(card, 20, 88, pw - 40), card, 20, 20);
 
-            AddPriority(card, 103, "1", "Perlengkapan darurat belum lengkap",
-                "Senter, cadangan baterai, & obat-obatan khusus belum siap.");
-            AddPriority(card, 197, "2", "Jalur evakuasi belum dipahami",
-                "Titik kumpul RW 04 dan jalur aman bebas banjir belum ditentukan.");
-            AddPriority(card, 292, "3", "Rencana logistik keluarga belum ada",
-                "Stok air bersih dan makanan darurat untuk 3x24 jam belum disimpan.");
+            var pendingItems = latestSession?.Items.Where(item => !item.IsCompleted).Take(3).ToList();
+            if (pendingItems == null || pendingItems.Count == 0)
+                AddText(card, latestSession == null ? "Selesaikan asesmen untuk melihat tindakan persiapan."
+                    : "Tidak ada tindakan yang belum selesai pada sesi ini.", 24, 110, pw - 48, 70, 10, false, muted);
+            else
+                for (int i = 0; i < pendingItems.Count; i++)
+                    AddPriority(card, 103 + i * 94, (i + 1).ToString(), "Tindakan persiapan", pendingItems[i].Description);
 
             Stretch(Divider(card, 20, 398, pw - 40), card, 20, 20);
-            AddText(card, "Diperbarui otomatis tiap minggu", 20, 408, 220, 18, 8f, false, muted);
+            AddText(card, "Dari checklist asesmen terakhir", 20, 408, 240, 18, 8f, false, muted);
 
             Label seeAll = AddAligned(card, "Lihat Semua  \u203A", pw - 20 - 125, 408, 125, 18, 8.5f, false, coral,
                 ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
             {
-                Info("Menampilkan semua prioritas.");
+                Nav.ShowChecklist(this);
             };
             PinRight(seeAll, card, 20);
         }

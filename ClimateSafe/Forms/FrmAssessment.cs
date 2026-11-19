@@ -188,6 +188,7 @@ namespace ClimateSafe
         private RoundButton btnBack;
         private RoundButton btnNext;
         private Label hintLabel;
+        private Guid submissionKey = Guid.NewGuid();
 
         private Font titleFont;
         private Font descFont;
@@ -211,6 +212,7 @@ namespace ClimateSafe
 
         private void ResetAnswers()
         {
+            submissionKey = Guid.NewGuid();
             Array.Fill(answers, -1);
             currentQ = 0;
         }
@@ -496,6 +498,10 @@ namespace ClimateSafe
                     {
                         Nav.ShowDashboard(this);
                     }
+                    else if (nama == "Checklist")
+                    {
+                        Nav.ShowChecklist(this);
+                    }
                     else if (nama != "Asesmen")
                     {
                         Info("Menu " + nama + " dibuka.");
@@ -727,6 +733,7 @@ namespace ClimateSafe
 
                 MakeClickable(row, delegate (object sender, EventArgs e)
                 {
+                    if (answers[currentQ] != idx) submissionKey = Guid.NewGuid();
                     answers[currentQ] = idx;
                     RefreshQuestion();
                 });
@@ -869,6 +876,11 @@ namespace ClimateSafe
                 var recommendationService = new RecommendationService();
                 IReadOnlyList<Recommendation> recommendations =
                     recommendationService.GenerateRecommendations(hazard, gaps);
+                if (Session.CurrentUser == null)
+                    throw new InvalidOperationException("Silakan login untuk menyimpan asesmen dan checklist.");
+                var checklistService = new ChecklistService();
+                checklistService.SaveAssessment(Session.CurrentUser.UserId, submissionKey,
+                    hazard, assessment, recommendations);
                 string gapSummary = gaps.Count == 0
                     ? "Semua dimensi sudah memenuhi ambang kesiapan."
                     : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ",
@@ -889,6 +901,10 @@ namespace ClimateSafe
             catch (InvalidOperationException ex)
             {
                 Info(ex.Message);
+            }
+            catch (Npgsql.NpgsqlException)
+            {
+                Info("Asesmen belum tersimpan. Periksa koneksi PostgreSQL lalu coba lagi.");
             }
         }
 

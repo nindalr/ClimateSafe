@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ClimateSafe
 {
@@ -12,13 +8,29 @@ namespace ClimateSafe
         private string _description;
         private bool _isCompleted;
 
+        public int AssessmentId { get; }
+        public int RecommendationId { get; }
+        public DateTime? CompletedAt { get; private set; }
+
         public ChecklistItem(
             int checklistItemId,
-            string description)
+            string description,
+            int assessmentId = 0,
+            int recommendationId = 0,
+            bool isCompleted = false,
+            DateTime? completedAt = null)
         {
+            if (string.IsNullOrWhiteSpace(description))
+                throw new ArgumentException("Tindakan checklist tidak boleh kosong.", nameof(description));
+            if (isCompleted != completedAt.HasValue)
+                throw new ArgumentException("Status checklist harus sesuai dengan waktu penyelesaian.");
+
             _checklistItemId = checklistItemId;
             _description = description;
-            _isCompleted = false;
+            AssessmentId = assessmentId;
+            RecommendationId = recommendationId;
+            _isCompleted = isCompleted;
+            CompletedAt = completedAt;
         }
 
         public int ChecklistItemId
@@ -40,7 +52,15 @@ namespace ClimateSafe
 
         public void MarkCompleted()
         {
+            if (_isCompleted) return;
             _isCompleted = true;
+            CompletedAt = DateTime.UtcNow;
+        }
+
+        public void MarkIncomplete()
+        {
+            _isCompleted = false;
+            CompletedAt = null;
         }
     }
 }
