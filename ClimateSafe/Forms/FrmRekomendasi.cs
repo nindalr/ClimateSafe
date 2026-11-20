@@ -267,7 +267,7 @@ namespace ClimateSafe
                     "Buka Checklist",
                     delegate (object sender, EventArgs e) { OpenChecklist(); },
                     "Lihat Riwayat",
-                    delegate (object sender, EventArgs e) { Info("Menu Riwayat dibuka."); });
+                    delegate (object sender, EventArgs e) { Nav.ShowRiwayat(this); });
             }
             else
             {
@@ -802,6 +802,10 @@ namespace ClimateSafe
                     else if (nama == "Checklist")
                     {
                         OpenChecklist();
+                    }
+                    else if (nama == "Riwayat")
+                    {
+                        Nav.ShowRiwayat(this);
                     }
                     else if (nama != "Rekomendasi")
                     {

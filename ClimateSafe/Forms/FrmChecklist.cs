@@ -242,6 +242,9 @@ namespace ClimateSafe
         private Dictionary<int, string> dimensionNames = new Dictionary<int, string>();
         private int selectedAssessmentId;
 
+        // Diisi Nav.ShowChecklist(form, assessmentId) agar sesi tertentu terpilih saat data dimuat.
+        public int PendingAssessmentId;
+
         private BufferedPanel clScroll;
         private BufferedPanel clPage;
         private BufferedPanel content;
@@ -348,7 +351,8 @@ namespace ClimateSafe
 
             try
             {
-                int keep = selectedAssessmentId;
+                int keep = PendingAssessmentId != 0 ? PendingAssessmentId : selectedAssessmentId;
+                PendingAssessmentId = 0;
                 IReadOnlyList<ChecklistSession> loaded = CurrentUserId == 0
                     ? new List<ChecklistSession>()
                     : service.GetSessions(CurrentUserId);
@@ -897,6 +901,10 @@ namespace ClimateSafe
                     else if (nama == "Rekomendasi")
                     {
                         Nav.ShowRekomendasi(this);
+                    }
+                    else if (nama == "Riwayat")
+                    {
+                        Nav.ShowRiwayat(this);
                     }
                     else if (nama != "Checklist")
                     {
