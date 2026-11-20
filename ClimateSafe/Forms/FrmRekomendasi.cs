@@ -575,7 +575,6 @@ namespace ClimateSafe
         private void OpenChecklist()
         {
             Nav.ShowChecklist(this);
-            RefreshData();
         }
 
         private string HazardGlyph(string hazardName)

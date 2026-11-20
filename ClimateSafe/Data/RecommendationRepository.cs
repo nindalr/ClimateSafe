@@ -72,5 +72,23 @@ namespace ClimateSafe
             }
             return totals;
         }
+
+        // Baca-saja: nama setiap dimensi kesiapsiagaan, dipakai sebagai label tindakan checklist.
+        public Dictionary<int, string> GetDimensionNames()
+        {
+            var names = new Dictionary<int, string>();
+
+            using var connection = createConnection();
+            connection.Open();
+            using var command = new NpgsqlCommand(
+                "SELECT dimension_id, name FROM preparedness_dimensions ORDER BY dimension_id", connection);
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                names[reader.GetInt32(0)] = reader.GetString(1);
+            }
+            return names;
+        }
     }
 }

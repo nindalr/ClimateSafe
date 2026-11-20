@@ -572,6 +572,7 @@ namespace ClimateSafe
         private static FrmDashboard dashboard;
         private static FrmAssessment assessment;
         private static FrmRekomendasi rekomendasi;
+        private static FrmChecklist checklist;
         private static bool quitting;
 
         public static void Register(Form f)
@@ -584,6 +585,9 @@ namespace ClimateSafe
 
             FrmRekomendasi r = f as FrmRekomendasi;
             if (r != null) rekomendasi = r;
+
+            FrmChecklist c = f as FrmChecklist;
+            if (c != null) checklist = c;
 
             f.FormClosed += delegate (object sender, FormClosedEventArgs e)
             {
@@ -625,9 +629,11 @@ namespace ClimateSafe
                 MessageBox.Show(from, "Silakan login untuk membuka checklist.", "Checklist");
                 return;
             }
-            using var checklist = new FrmChecklist(Session.CurrentUser.UserId);
-            checklist.ShowDialog(from);
-            if (from is FrmDashboard dashboardForm) dashboardForm.RefreshSavedData();
+            if (checklist == null || checklist.IsDisposed)
+            {
+                checklist = new FrmChecklist();
+            }
+            SwitchTo(checklist, from);
         }
 
         // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
@@ -636,9 +642,11 @@ namespace ClimateSafe
             if (dashboard != null && !dashboard.IsDisposed) dashboard.Hide();
             if (assessment != null && !assessment.IsDisposed) assessment.Hide();
             if (rekomendasi != null && !rekomendasi.IsDisposed) rekomendasi.Hide();
+            if (checklist != null && !checklist.IsDisposed) checklist.Hide();
             dashboard = null;
             assessment = null;
             rekomendasi = null;
+            checklist = null;
             quitting = false;
         }
 
