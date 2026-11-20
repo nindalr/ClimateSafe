@@ -506,6 +506,10 @@ namespace ClimateSafe
                     {
                         Nav.ShowRekomendasi(this);
                     }
+                    else if (nama == "Riwayat")
+                    {
+                        Nav.ShowRiwayat(this);
+                    }
                     else if (nama != "Asesmen")
                     {
                         Info("Menu " + nama + " dibuka.");

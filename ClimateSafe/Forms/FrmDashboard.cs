@@ -573,6 +573,7 @@ namespace ClimateSafe
         private static FrmAssessment assessment;
         private static FrmRekomendasi rekomendasi;
         private static FrmChecklist checklist;
+        private static FrmRiwayat riwayat;
         private static bool quitting;
 
         public static void Register(Form f)
@@ -588,6 +589,9 @@ namespace ClimateSafe
 
             FrmChecklist c = f as FrmChecklist;
             if (c != null) checklist = c;
+
+            FrmRiwayat h = f as FrmRiwayat;
+            if (h != null) riwayat = h;
 
             f.FormClosed += delegate (object sender, FormClosedEventArgs e)
             {
@@ -622,7 +626,7 @@ namespace ClimateSafe
             SwitchTo(rekomendasi, from);
         }
 
-        public static void ShowChecklist(Form from)
+        public static void ShowChecklist(Form from, int? assessmentId = null)
         {
             if (Session.CurrentUser == null)
             {
@@ -633,7 +637,22 @@ namespace ClimateSafe
             {
                 checklist = new FrmChecklist();
             }
+            if (assessmentId.HasValue) checklist.PendingAssessmentId = assessmentId.Value;
             SwitchTo(checklist, from);
+        }
+
+        public static void ShowRiwayat(Form from)
+        {
+            if (Session.CurrentUser == null)
+            {
+                MessageBox.Show(from, "Silakan login untuk membuka riwayat.", "Riwayat");
+                return;
+            }
+            if (riwayat == null || riwayat.IsDisposed)
+            {
+                riwayat = new FrmRiwayat();
+            }
+            SwitchTo(riwayat, from);
         }
 
         // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
@@ -643,10 +662,12 @@ namespace ClimateSafe
             if (assessment != null && !assessment.IsDisposed) assessment.Hide();
             if (rekomendasi != null && !rekomendasi.IsDisposed) rekomendasi.Hide();
             if (checklist != null && !checklist.IsDisposed) checklist.Hide();
+            if (riwayat != null && !riwayat.IsDisposed) riwayat.Hide();
             dashboard = null;
             assessment = null;
             rekomendasi = null;
             checklist = null;
+            riwayat = null;
             quitting = false;
         }
 
@@ -1060,6 +1081,10 @@ namespace ClimateSafe
                     else if (nama == "Rekomendasi")
                     {
                         Nav.ShowRekomendasi(this);
+                    }
+                    else if (nama == "Riwayat")
+                    {
+                        Nav.ShowRiwayat(this);
                     }
                     else if (nama != "Beranda")
                     {
