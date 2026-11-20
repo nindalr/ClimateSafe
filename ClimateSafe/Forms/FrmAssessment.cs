@@ -205,6 +205,7 @@ namespace ClimateSafe
             base.OnVisibleChanged(e);
             if (Visible && asBuilt)
             {
+                RefreshUserCard();
                 ResetAnswers();
                 RefreshQuestion();
             }
@@ -547,21 +548,36 @@ namespace ClimateSafe
             settingsText.Cursor = Cursors.Hand;
             settingsText.Click += openSettings;
 
-            RoundPanel user = Card(bottom, 16, 65, 223, 57, 12, Color.White, line);
+            FocusCard user = new FocusCard();
+            user.Bounds = new Rectangle(16, 65, 223, 57);
+            user.Radius = 12;
+            user.Fill = Color.White;
+            user.BorderColor = line;
+            user.SelectColor = navy;
+            bottom.Controls.Add(user);
 
             RoundPanel avatar = Card(user, 8, 9, 38, 38, 19, coralSoft, Color.Empty);
-            AddAligned(avatar, Session.Initials, 0, 0, 38, 38, 8.5f, true, coral, ContentAlignment.MiddleCenter);
+            sidebarInitials = AddAligned(avatar, Session.Initials, 0, 0, 38, 38, 8.5f, true, coral, ContentAlignment.MiddleCenter);
 
-            AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
+            sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
             RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
             AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
 
             AddChevron(user, 196, 20, muted);
-            MakeClickable(user, delegate (object sender, EventArgs e)
-            {
-                Info("Profil: " + Session.DisplayName + " (" + Session.RoleText + ")");
-            });
+            EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
+            MakeClickable(user, openProfil);
+            user.Activated += openProfil;
+        }
+
+        private Label sidebarName;
+        private Label sidebarInitials;
+
+        // Kartu pengguna sidebar dibaca ulang agar nama baru dari halaman Profil tampil.
+        private void RefreshUserCard()
+        {
+            if (sidebarName != null) sidebarName.Text = Session.DisplayName;
+            if (sidebarInitials != null) sidebarInitials.Text = Session.Initials;
         }
 
         private void SetActiveMenu(RoundPanel active)
