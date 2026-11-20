@@ -574,6 +574,7 @@ namespace ClimateSafe
         private static FrmRekomendasi rekomendasi;
         private static FrmChecklist checklist;
         private static FrmRiwayat riwayat;
+        private static FrmEdukasi edukasi;
         private static bool quitting;
 
         public static void Register(Form f)
@@ -592,6 +593,9 @@ namespace ClimateSafe
 
             FrmRiwayat h = f as FrmRiwayat;
             if (h != null) riwayat = h;
+
+            FrmEdukasi ed = f as FrmEdukasi;
+            if (ed != null) edukasi = ed;
 
             f.FormClosed += delegate (object sender, FormClosedEventArgs e)
             {
@@ -655,6 +659,15 @@ namespace ClimateSafe
             SwitchTo(riwayat, from);
         }
 
+        public static void ShowEdukasi(Form from)
+        {
+            if (edukasi == null || edukasi.IsDisposed)
+            {
+                edukasi = new FrmEdukasi();
+            }
+            SwitchTo(edukasi, from);
+        }
+
         // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
         public static void Reset()
         {
@@ -663,11 +676,13 @@ namespace ClimateSafe
             if (rekomendasi != null && !rekomendasi.IsDisposed) rekomendasi.Hide();
             if (checklist != null && !checklist.IsDisposed) checklist.Hide();
             if (riwayat != null && !riwayat.IsDisposed) riwayat.Hide();
+            if (edukasi != null && !edukasi.IsDisposed) edukasi.Hide();
             dashboard = null;
             assessment = null;
             rekomendasi = null;
             checklist = null;
             riwayat = null;
+            edukasi = null;
             quitting = false;
         }
 
@@ -967,6 +982,16 @@ namespace ClimateSafe
             return p;
         }
 
+        // Lebar teks tombol banner (8,5pt bold), dipakai agar lebar mengikuti teks.
+        private static int PromoButtonTextWidth(string text)
+        {
+            using (Font f = UI.Body(8.5f, FontStyle.Bold))
+            {
+                return TextRenderer.MeasureText(text, f,
+                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+            }
+        }
+
         private RoundButton MakeButton(Control parent, string text, int x, int y, int w, int h,
                                        Color fill, Color hover, Color fore, Color border,
                                        int radius, float size)
@@ -1054,8 +1079,8 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "\u2302", "\u270E", "\u2606", "\u2611", "\u21BA", "\u263A" };
-            string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Profil" };
+            string[] glyphs = { "\u2302", "\u270E", "\u2606", "\u2611", "\u21BA", "\u25A4" };
+            string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
             {
@@ -1085,6 +1110,10 @@ namespace ClimateSafe
                     else if (nama == "Riwayat")
                     {
                         Nav.ShowRiwayat(this);
+                    }
+                    else if (nama == "Edukasi")
+                    {
+                        Nav.ShowEdukasi(this);
                     }
                     else if (nama != "Beranda")
                     {
@@ -1347,11 +1376,17 @@ namespace ClimateSafe
             AddText(card, "Langkah kecil hari ini membuat kita lebih siap menghadapi esok hari.",
                 21, 78, 150, 62, 9f, false, muted);
 
-            RoundButton start = MakeButton(card, "Mulai Asesmen  \u2192", 21, 200, 145, 35,
+            // Lebar diukur dari teks dengan padding yang sama seperti tombol sebelumnya
+            // ("Mulai Asesmen  \u2192" pada lebar 145), posisi dan gaya tidak berubah.
+            string promoText = "Buka Edukasi  \u2192";
+            int promoPad = 145 - PromoButtonTextWidth("Mulai Asesmen  \u2192");
+            int promoW = PromoButtonTextWidth(promoText) + promoPad;
+
+            RoundButton start = MakeButton(card, promoText, 21, 200, promoW, 35,
                 coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 8, 8.5f);
             start.Click += delegate (object sender, EventArgs e)
             {
-                Nav.ShowAssessment(this);
+                Nav.ShowEdukasi(this);
             };
 
             RoundPanel avatar = Card(card, C3 - 20 - 96, 32, 96, 96, 48,
