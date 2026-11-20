@@ -67,5 +67,17 @@ namespace ClimateSafe.Properties
                 resourceCulture = value;
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static global::System.Drawing.Bitmap Logo
+        {
+            get
+            {
+                object obj = ResourceManager.GetObject("Logo", resourceCulture);
+                return ((global::System.Drawing.Bitmap)(obj));
+            }
+        }
     }
 }

@@ -71,6 +71,24 @@ namespace ClimateSafe
             p.CloseFigure();
             return p;
         }
+
+        // Logo ClimateSafe: gambar 44x44 ditampilkan 40x40 di dalam kotak, rasio tetap.
+        private static Image logoImage;
+
+        public static PictureBox AddLogo(Control parent)
+        {
+            if (logoImage == null)
+            {
+                logoImage = Properties.Resources.Logo;
+            }
+            PictureBox pb = new PictureBox();
+            pb.Image = logoImage;
+            pb.SizeMode = PictureBoxSizeMode.Zoom;
+            pb.BackColor = Color.Transparent;
+            pb.Bounds = new Rectangle(0, 0, parent.Width, parent.Height);
+            parent.Controls.Add(pb);
+            return pb;
+        }
     }
 
     internal class BufferedPanel : Panel
@@ -553,6 +571,7 @@ namespace ClimateSafe
     {
         private static FrmDashboard dashboard;
         private static FrmAssessment assessment;
+        private static FrmRekomendasi rekomendasi;
         private static bool quitting;
 
         public static void Register(Form f)
@@ -562,6 +581,9 @@ namespace ClimateSafe
 
             FrmAssessment a = f as FrmAssessment;
             if (a != null) assessment = a;
+
+            FrmRekomendasi r = f as FrmRekomendasi;
+            if (r != null) rekomendasi = r;
 
             f.FormClosed += delegate (object sender, FormClosedEventArgs e)
             {
@@ -587,6 +609,15 @@ namespace ClimateSafe
             SwitchTo(assessment, from);
         }
 
+        public static void ShowRekomendasi(Form from)
+        {
+            if (rekomendasi == null || rekomendasi.IsDisposed)
+            {
+                rekomendasi = new FrmRekomendasi();
+            }
+            SwitchTo(rekomendasi, from);
+        }
+
         public static void ShowChecklist(Form from)
         {
             if (Session.CurrentUser == null)
@@ -604,8 +635,10 @@ namespace ClimateSafe
         {
             if (dashboard != null && !dashboard.IsDisposed) dashboard.Hide();
             if (assessment != null && !assessment.IsDisposed) assessment.Hide();
+            if (rekomendasi != null && !rekomendasi.IsDisposed) rekomendasi.Hide();
             dashboard = null;
             assessment = null;
+            rekomendasi = null;
             quitting = false;
         }
 
@@ -987,7 +1020,7 @@ namespace ClimateSafe
             sidebar.Controls.Add(edge);
 
             RoundPanel logo = Card(sidebar, 28, 24, 40, 40, 10, Color.FromArgb(244, 247, 252), line);
-            AddSymbol(logo, "\u2600", 0, 0, 40, 40, 15f, coral);
+            UI.AddLogo(logo);
 
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
@@ -1015,6 +1048,10 @@ namespace ClimateSafe
                     else if (nama == "Checklist")
                     {
                         Nav.ShowChecklist(this);
+                    }
+                    else if (nama == "Rekomendasi")
+                    {
+                        Nav.ShowRekomendasi(this);
                     }
                     else if (nama != "Beranda")
                     {
@@ -1243,7 +1280,7 @@ namespace ClimateSafe
                 delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); });
 
             AddActionItem(card, 136, "\u2606", "Lihat Rekomendasi", "Dapatkan saran sesuai hasilmu",
-                delegate (object sender, EventArgs e) { Info("Menampilkan rekomendasi untuk Anda..."); });
+                delegate (object sender, EventArgs e) { Nav.ShowRekomendasi(this); });
 
             Stretch(Divider(card, 21, 210, C3 - 42), card, 21, 21);
             AddText(card, "Estimasi asesmen: ~3 menit", 21, 219, 250, 18, 8.5f, false, muted);
