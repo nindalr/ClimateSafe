@@ -576,6 +576,7 @@ namespace ClimateSafe
         private static FrmRiwayat riwayat;
         private static FrmEdukasi edukasi;
         private static FrmProfil profil;
+        private static FrmHasilAsesmen hasil;
         private static bool quitting;
 
         public static void Register(Form f)
@@ -600,6 +601,9 @@ namespace ClimateSafe
 
             FrmProfil pr = f as FrmProfil;
             if (pr != null) profil = pr;
+
+            FrmHasilAsesmen hs = f as FrmHasilAsesmen;
+            if (hs != null) hasil = hs;
 
             f.FormClosed += delegate (object sender, FormClosedEventArgs e)
             {
@@ -687,6 +691,16 @@ namespace ClimateSafe
             SwitchTo(profil, from);
         }
 
+        public static void ShowHasil(Form from, HasilAsesmenData data)
+        {
+            if (hasil == null || hasil.IsDisposed)
+            {
+                hasil = new FrmHasilAsesmen();
+            }
+            hasil.SetData(data);
+            SwitchTo(hasil, from);
+        }
+
         // Panggil saat login/logout supaya form lama (cache) tidak dipakai lagi
         public static void Reset()
         {
@@ -696,6 +710,13 @@ namespace ClimateSafe
             if (checklist != null && !checklist.IsDisposed) checklist.Hide();
             if (riwayat != null && !riwayat.IsDisposed) riwayat.Hide();
             if (edukasi != null && !edukasi.IsDisposed) edukasi.Hide();
+            if (hasil != null && !hasil.IsDisposed)
+            {
+                // Halaman hasil dibuang agar hasil pengguna sebelumnya tidak muncul lagi.
+                quitting = true;
+                hasil.Hide();
+                hasil.Dispose();
+            }
             if (profil != null && !profil.IsDisposed)
             {
                 // Halaman profil dibuang agar data pengguna sebelumnya tidak tersisa.
@@ -711,6 +732,7 @@ namespace ClimateSafe
             riwayat = null;
             edukasi = null;
             profil = null;
+            hasil = null;
             quitting = false;
         }
 
