@@ -1312,8 +1312,8 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "☺" };
-            string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Profil" };
+            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
             {
@@ -1343,6 +1343,10 @@ namespace ClimateSafe
                     else if (nama == "Checklist")
                     {
                         Nav.ShowChecklist(this);
+                    }
+                    else if (nama == "Edukasi")
+                    {
+                        Nav.ShowEdukasi(this);
                     }
                     else if (nama != "Riwayat")
                     {

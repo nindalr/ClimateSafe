@@ -20,6 +20,24 @@ namespace ClimateSafe
             this.createConnection = createConnection ?? Database.Create;
         }
 
+        // Baca-saja: daftar kategori bahaya, urut hazard_id (dipakai halaman Edukasi).
+        public IReadOnlyList<Hazard> GetHazards()
+        {
+            var hazards = new List<Hazard>();
+
+            using var connection = createConnection();
+            connection.Open();
+            using var command = new NpgsqlCommand(
+                "SELECT hazard_id, name FROM hazards ORDER BY hazard_id", connection);
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                hazards.Add(new Hazard(reader.GetInt32(0), reader.GetString(1)));
+            }
+            return hazards.AsReadOnly();
+        }
+
         // Baca-saja: skor per dimensi untuk satu asesmen milik pengguna tertentu.
         // Bila satu dimensi punya lebih dari satu pertanyaan, skornya dirata-ratakan.
         public IReadOnlyList<DimensionScore> GetDimensionScores(int userId, int assessmentId)
