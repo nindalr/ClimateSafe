@@ -571,6 +571,7 @@ namespace ClimateSafe
     {
         private static FrmDashboard dashboard;
         private static FrmAssessment assessment;
+        private static FrmPilihBahaya pilihBahaya;
         private static FrmRekomendasi rekomendasi;
         private static FrmChecklist checklist;
         private static FrmRiwayat riwayat;
@@ -586,6 +587,9 @@ namespace ClimateSafe
 
             FrmAssessment a = f as FrmAssessment;
             if (a != null) assessment = a;
+
+            FrmPilihBahaya pb = f as FrmPilihBahaya;
+            if (pb != null) pilihBahaya = pb;
 
             FrmRekomendasi r = f as FrmRekomendasi;
             if (r != null) rekomendasi = r;
@@ -620,12 +624,24 @@ namespace ClimateSafe
             SwitchTo(dashboard, from);
         }
 
+        // Langkah 1 alur asesmen: halaman Pilih Bahaya.
         public static void ShowAssessment(Form from)
+        {
+            if (pilihBahaya == null || pilihBahaya.IsDisposed)
+            {
+                pilihBahaya = new FrmPilihBahaya();
+            }
+            SwitchTo(pilihBahaya, from);
+        }
+
+        // Langkah 2: halaman pertanyaan dengan bahaya terpilih dari langkah 1.
+        public static void ShowAssessmentQuestions(Form from, int hazardIdx)
         {
             if (assessment == null || assessment.IsDisposed)
             {
                 assessment = new FrmAssessment();
             }
+            assessment.ApplyHazard(hazardIdx);
             SwitchTo(assessment, from);
         }
 
@@ -710,6 +726,13 @@ namespace ClimateSafe
             if (checklist != null && !checklist.IsDisposed) checklist.Hide();
             if (riwayat != null && !riwayat.IsDisposed) riwayat.Hide();
             if (edukasi != null && !edukasi.IsDisposed) edukasi.Hide();
+            if (pilihBahaya != null && !pilihBahaya.IsDisposed)
+            {
+                // Halaman langkah 1 dibuang mengikuti pola Profil dan Hasil.
+                quitting = true;
+                pilihBahaya.Hide();
+                pilihBahaya.Dispose();
+            }
             if (hasil != null && !hasil.IsDisposed)
             {
                 // Halaman hasil dibuang agar hasil pengguna sebelumnya tidak muncul lagi.
@@ -727,6 +750,7 @@ namespace ClimateSafe
             }
             dashboard = null;
             assessment = null;
+            pilihBahaya = null;
             rekomendasi = null;
             checklist = null;
             riwayat = null;
