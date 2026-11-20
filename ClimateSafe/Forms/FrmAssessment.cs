@@ -473,7 +473,7 @@ namespace ClimateSafe
             sidebar.Controls.Add(edge);
 
             RoundPanel logo = Card(sidebar, 28, 24, 40, 40, 10, Color.FromArgb(244, 247, 252), line);
-            AddSymbol(logo, "\u2600", 0, 0, 40, 40, 15f, coral);
+            UI.AddLogo(logo);
 
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
@@ -501,6 +501,10 @@ namespace ClimateSafe
                     else if (nama == "Checklist")
                     {
                         Nav.ShowChecklist(this);
+                    }
+                    else if (nama == "Rekomendasi")
+                    {
+                        Nav.ShowRekomendasi(this);
                     }
                     else if (nama != "Asesmen")
                     {
