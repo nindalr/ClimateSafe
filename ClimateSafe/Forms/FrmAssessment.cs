@@ -907,20 +907,40 @@ namespace ClimateSafe
                 if (Session.CurrentUser == null)
                     throw new InvalidOperationException("Silakan login untuk menyimpan asesmen dan checklist.");
                 var checklistService = new ChecklistService();
-                checklistService.SaveAssessment(Session.CurrentUser.UserId, submissionKey,
-                    hazard, assessment, recommendations);
-                string gapSummary = gaps.Count == 0
-                    ? "Semua dimensi sudah memenuhi ambang kesiapan."
-                    : "Bagian yang perlu ditingkatkan:\n• " + string.Join("\n• ",
-                        gaps.Select(gap => gap.DimensionName + " : " + gap.Score.ToString("0.##") + "/100"));
-                string recommendationSummary = recommendations.Count == 0
-                    ? ""
-                    : "\n\nRekomendasi persiapan:\n• " + string.Join("\n• ",
-                        recommendations.Select(item => "[" + item.Priority + "] " + item.Description));
-                Info("Asesmen " + hazard.Name + " selesai.\nSkor kesiapan kamu: " +
-                    assessment.OverallScore.ToString("0.##") + "/100\nLevel: " + assessment.Level +
-                    "\n\n" + gapSummary + recommendationSummary);
-                Nav.ShowDashboard(this);
+                int assessmentId = checklistService.SaveAssessment(Session.CurrentUser.UserId,
+                    submissionKey, hazard, assessment, recommendations);
+
+                // Kegagalan setelah asesmen tersimpan ditangani terpisah supaya pesan
+                // "belum tersimpan" tidak muncul untuk data yang sudah masuk.
+                try
+                {
+                    var recommendationRepository = new RecommendationRepository();
+                    IReadOnlyList<DimensionScore> dimensionScores =
+                        recommendationRepository.GetDimensionScores(
+                            Session.CurrentUser.UserId, assessmentId);
+
+                    var hasil = new HasilAsesmenData();
+                    hasil.HazardName = hazard.Name;
+                    hasil.HazardId = hazard.HazardId;
+                    hasil.OverallScore = assessment.OverallScore;
+                    hasil.Level = assessment.Level;
+                    hasil.AssessmentDate = assessment.AssessmentDate;
+                    hasil.GapCount = gaps.Count;
+                    hasil.Dimensions = dimensionScores;
+                    hasil.Recommendations = recommendations;
+
+                    Nav.ShowHasil(this, hasil);
+                }
+                catch (Npgsql.NpgsqlException ex)
+                {
+                    Info("Asesmen tersimpan, tetapi hasil belum dapat ditampilkan. " + ex.Message);
+                    Nav.ShowDashboard(this);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Info("Asesmen tersimpan, tetapi hasil belum dapat ditampilkan. " + ex.Message);
+                    Nav.ShowDashboard(this);
+                }
             }
             catch (ArgumentException ex)
             {
