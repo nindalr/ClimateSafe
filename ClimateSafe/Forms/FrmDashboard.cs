@@ -820,6 +820,13 @@ namespace ClimateSafe
         private bool dashBuilt;
         private ChecklistSession? latestSession;
         private readonly ChecklistService checklistService;
+        private readonly WeatherService weatherService = new WeatherService();
+        private readonly System.Windows.Forms.Timer weatherTimer = new System.Windows.Forms.Timer { Interval = 15 * 60 * 1000 };
+        private Label weatherLabel;
+        private Label weatherIcon;
+        private Label weatherDetails;
+        private DateTime weatherLastFetched = DateTime.MinValue;
+        private bool weatherLoading;
 
         public FrmDashboard() : this(new ChecklistService())
         {
@@ -831,6 +838,8 @@ namespace ClimateSafe
             InitializeComponent();
             BuildDashboard();
             Nav.Register(this);
+            weatherTimer.Tick += async (sender, e) => await RefreshWeatherAsync();
+            FormClosed += (sender, e) => weatherTimer.Dispose();
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -841,7 +850,38 @@ namespace ClimateSafe
                 RefreshUserCard();
                 if (greetingLabel != null) greetingLabel.Text = "Halo, " + Session.FirstName;
                 RefreshSavedData();
+                weatherTimer.Start();
+                _ = RefreshWeatherAsync();
             }
+            else if (!Visible) weatherTimer.Stop();
+        }
+
+        private async System.Threading.Tasks.Task RefreshWeatherAsync()
+        {
+            if (weatherLoading || DateTime.UtcNow - weatherLastFetched < TimeSpan.FromMinutes(15)) return;
+            weatherLoading = true;
+            weatherLabel.Text = "Memuat cuaca...";
+            weatherDetails.Text = "Sumber: Open-Meteo";
+            try
+            {
+                WeatherData weather = await weatherService.GetYogyakartaAsync();
+                if (IsDisposed || Disposing) return;
+                weatherLabel.Text = $"Yogyakarta {weather.Temperature:0}°C";
+                weatherIcon.Text = weather.Icon;
+                weatherDetails.Text = $"{weather.Condition} · Open-Meteo";
+                weatherLastFetched = DateTime.UtcNow;
+            }
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException ||
+                                       ex is System.Threading.Tasks.TaskCanceledException ||
+                                       ex is System.Text.Json.JsonException || ex is IOException ||
+                                       ex is InvalidOperationException || ex is FormatException)
+            {
+                if (IsDisposed || Disposing) return;
+                weatherLabel.Text = "Tidak tersedia";
+                weatherIcon.Text = "?";
+                weatherDetails.Text = "Sumber: Open-Meteo";
+            }
+            finally { weatherLoading = false; }
         }
 
         internal void RefreshSavedData()
@@ -1303,9 +1343,11 @@ namespace ClimateSafe
             AddAligned(dateCard, tanggal, 34, 0, 152, 32, 8.5f, false, ink, ContentAlignment.MiddleLeft);
 
             RoundPanel weatherCard = Card(dashHeader, 906, 64, 147, 32, 16, Color.White, pillBorder);
-            AddSymbol(weatherCard, "\u2600", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
-            AddAligned(weatherCard, "Yogyakarta 28\u00B0C", 34, 0, 110, 32, 8.5f, false, ink,
+            weatherIcon = AddSymbol(weatherCard, "?", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
+            weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
+            weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", 906, 98, 147, 18, 7f, false, muted,
+                ContentAlignment.MiddleCenter);
 
             RoundPanel bell = Card(dashHeader, 1065, 64, 32, 32, 16, Color.White, pillBorder);
             AddEmoji(bell, "\U0001F514", 0, 0, 32, 32, 10f, muted);
@@ -1318,6 +1360,7 @@ namespace ClimateSafe
             {
                 bell.Left = dashHeader.Width - 30 - bell.Width;
                 weatherCard.Left = bell.Left - 12 - weatherCard.Width;
+                weatherDetails.Left = weatherCard.Left;
                 dateCard.Left = weatherCard.Left - 12 - dateCard.Width;
             };
         }
