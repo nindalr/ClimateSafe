@@ -8,6 +8,7 @@ builder.Services.AddSingleton<ClimateSafe.Api.Data.AssessmentHistoryRepository>(
 builder.Services.AddSingleton<ClimateSafe.Api.Data.QuestionCatalogRepository>();
 builder.Services.AddSingleton<ClimateSafe.Api.Data.AssessmentSubmissionRepository>();
 builder.Services.AddSingleton<ClimateSafe.Api.Data.EducationContentRepository>();
+builder.Services.AddSingleton<ClimateSafe.Api.Data.AdminMonitoringRepository>();
 builder.Services.AddAuthentication("Session")
     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ClimateSafe.Api.Services.SessionAuthenticationHandler>("Session", null);
 builder.Services.AddAuthorization();

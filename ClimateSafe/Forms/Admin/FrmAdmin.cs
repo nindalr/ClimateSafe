@@ -145,7 +145,7 @@ namespace ClimateSafe
                 }
                 else
                 {
-                    page = BuildPlaceholderPage(index);
+                    page = new AdminMonitoringPage();
                 }
 
                 page.Top = AdminUi.PagePad;
@@ -166,32 +166,6 @@ namespace ClimateSafe
         {
             if (kontenPage != null && !kontenPage.ConfirmDiscard()) e.Cancel = true;
             base.OnFormClosing(e);
-        }
-
-        // Halaman log masih dalam tahap perencanaan.
-        private Control BuildPlaceholderPage(int index)
-        {
-            string title = index == 1 ? "Kelola Konten" : "Log & Monitoring";
-
-            BufferedPanel page = new BufferedPanel();
-            page.BackColor = AdminUi.Bg;
-            page.Width = AdminUi.PageMaxW;
-
-            AdminUi.AddText(page, "Admin", 0, 5, 44, 16, 9f, false, AdminUi.Muted);
-            AdminUi.AddText(page, "/", 46, 5, 10, 16, 9f, false, AdminUi.Muted);
-            AdminUi.AddText(page, title, 58, 5, 160, 16, 9f, true, AdminUi.Ink);
-            AdminUi.AddText(page, title, 0, 26, 600, 38, 19f, true, AdminUi.TitleBlue);
-
-            RoundPanel card = AdminUi.Card(page, 0, AdminUi.ContentTop, page.Width, 200,
-                AdminUi.CardRadius, Color.White, AdminUi.Line);
-            AdminUi.Stretch(card, page, 0, 0);
-
-            Label note = AdminUi.AddAligned(card, "Halaman ini akan tersedia pada tahap berikutnya.",
-                24, 0, page.Width - 48, 200, 10f, false, AdminUi.SubInk, ContentAlignment.MiddleCenter);
-            AdminUi.Stretch(note, card, 24, 24);
-
-            page.Height = AdminUi.ContentTop + 200 + AdminUi.PagePad;
-            return page;
         }
 
         // ---------- sidebar ----------

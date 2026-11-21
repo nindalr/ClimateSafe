@@ -81,6 +81,17 @@ Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
 
 ###
 
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/monitoring?period=7days&page=1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+# Filter opsional berdasarkan hazard.
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/monitoring?period=30days&hazardId=1&page=1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
 GET {{ClimateSafe.Api_HostAddress}}/api/assessments
 Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
 
