@@ -9,3 +9,27 @@ GET {{ClimateSafe.Api_HostAddress}}/api/hazards
 Accept: application/json
 
 ###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/account/register
+Content-Type: application/json
+
+{ "name": "Pengguna Contoh", "email": "pengguna@example.com", "password": "contoh-password" }
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/account/login
+Content-Type: application/json
+
+{ "email": "pengguna@example.com", "password": "contoh-password" }
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/account/me
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/users
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
