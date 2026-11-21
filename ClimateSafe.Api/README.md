@@ -48,6 +48,16 @@ Pendaftaran selalu membuat akun berperan User. Akun Admin harus disiapkan oleh
 pengelola database; endpoint admin tersedia di `/api/admin/users`.
 Gunakan HTTPS saat mengirim password dan token melalui jaringan.
 
+`GET /api/admin/monitoring` tersedia untuk admin aktif dan mengembalikan jumlah
+akun berperan User, jumlah akun User aktif, jumlah asesmen, dan daftar asesmen.
+Parameter `period` menerima `today` (default), `7days`, atau `30days`.
+Rentang menggunakan hari kalender WIB dan mencakup hari ini sampai waktu
+permintaan; `7days` dan `30days` mencakup 7 atau 30 tanggal termasuk hari ini.
+Parameter `hazardId` opsional hanya memfilter jumlah dan daftar asesmen, bukan
+jumlah akun. Parameter `page` dimulai dari 1 dan setiap halaman memuat paling
+banyak 50 asesmen. Jumlah dan daftar diambil dari snapshot database yang sama.
+Data bersumber dari asesmen yang telah tersimpan; ini bukan audit log aktivitas.
+
 Riwayat dan checklist memerlukan token login yang sama:
 
 - `GET /api/assessments` menampilkan daftar asesmen dan jumlah checklist.
