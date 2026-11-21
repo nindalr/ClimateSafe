@@ -17,6 +17,7 @@ psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migra
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/002_assessment_history.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/003_account_sessions.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/004_question_catalog.sql
+psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/005_assessment_submission.sql
 ```
 
 Skrip ini tidak dijalankan secara otomatis saat API dimulai. `000_users.sql`
@@ -27,6 +28,8 @@ Migrasi 004 menambahkan pilihan jawaban dan katalog awal. Pertanyaan yang sudah
 ada untuk hazard dan dimensi yang sama dipertahankan, termasuk ID dan teksnya.
 ID baru mengikuti format `hazard_id * 100 + dimension_id`; jika ID tersebut sudah
 dipakai oleh kombinasi lain, migrasi gagal dan transaksi dibatalkan untuk ditinjau.
+Migrasi 005 menambahkan katalog rekomendasi awal dan penyimpanan ID pilihan untuk
+mendeteksi pengiriman ulang. Rekomendasi yang sudah ada di katalog tidak ditimpa.
 
 Gunakan `ClimateSafe.Api.http` untuk memanggil `GET /health` dan `GET /api/hazards`.
 Endpoint health menunjukkan bahwa proses API berjalan, sedangkan endpoint hazards
@@ -53,3 +56,11 @@ Riwayat dan checklist memerlukan token login yang sama:
 Data hanya tersedia untuk pemilik asesmen. Target dimensi pada riwayat mengikuti
 nilai database saat ini. Skor per dimensi dihitung dengan skor maksimum jawaban 3,
 sesuai aturan aplikasi desktop saat ini.
+
+`POST /api/assessments` menerima token login dan JSON berisi `submissionKey` (UUID),
+`hazardId`, serta `optionIds` yang mencakup satu pilihan untuk setiap pertanyaan.
+Ambil ID pilihan dari katalog hazard. Server menentukan bobot, skor, dan rekomendasi.
+Gunakan kunci yang sama jika mengulang pengiriman jawaban yang sama; jika jawaban
+atau hazard berbeda, gunakan kunci baru. Pengiriman ulang mengembalikan asesmen yang
+sudah disimpan. Kunci asesmen lama yang tidak memiliki catatan ID pilihan tidak
+dapat digunakan untuk pengiriman ulang melalui endpoint ini.

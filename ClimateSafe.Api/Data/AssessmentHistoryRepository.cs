@@ -6,7 +6,7 @@ namespace ClimateSafe.Api.Data;
 
 public sealed class AssessmentHistoryRepository(IConfiguration configuration)
 {
-    private const double MaximumAnswerScore = 3;
+    private const double MaximumAnswerScore = ClimateSafe.Api.Services.AssessmentScoringService.MaximumAnswerScore;
 
     private NpgsqlConnection CreateConnection() => new(configuration.GetConnectionString("ClimateSafe")
         ?? throw new InvalidOperationException("ConnectionStrings:ClimateSafe belum dikonfigurasi."));

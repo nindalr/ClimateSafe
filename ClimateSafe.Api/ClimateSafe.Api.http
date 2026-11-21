@@ -44,6 +44,15 @@ Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
 
 ###
 
+# Contoh saja: ganti UUID dan ID pilihan sesuai katalog pada database Anda.
+POST {{ClimateSafe.Api_HostAddress}}/api/assessments
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+Content-Type: application/json
+
+{ "submissionKey": "00000000-0000-0000-0000-000000000001", "hazardId": 1, "optionIds": [1, 5, 9, 13, 17] }
+
+###
+
 GET {{ClimateSafe.Api_HostAddress}}/api/assessments/1
 Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
 
