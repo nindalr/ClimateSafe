@@ -171,7 +171,7 @@ namespace ClimateSafe.Auth
                 string? newStatus = _adminService.ToggleStatus(_admin, selectedId);
                 if (newStatus != null)
                 {
-                    MessageBox.Show("Status akun menjadi " + newStatus, "Well Done!",
+                    MessageBox.Show("Status akun berhasil " + newStatus, "Well Done!",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                 }
@@ -254,7 +254,7 @@ namespace ClimateSafe.Auth
                 }
                 catch (Exception)
                 {
-                    MessageBox.Show(dialog, "Password belum dapat direset. Periksa hak akses dan koneksi database.",
+                    MessageBox.Show(dialog, "Password belum dapat direset. Periksa hak akses dan koneksi API.",
                         "Reset Password", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };

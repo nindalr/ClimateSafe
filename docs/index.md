@@ -1,4 +1,4 @@
-# ClimateSafe
+﻿# ClimateSafe
 
 ## Nama Kelompok
 Kelompok 17
@@ -46,6 +46,11 @@ ClimateSafe **bukan** sistem prediksi bencana dan **bukan** sistem peringatan di
 6. **Preparedness Checklist**: rekomendasi diubah menjadi checklist tindakan yang dapat dipantau.
 7. **Progress Tracking**: pengguna menandai checklist selesai/belum, ditampilkan sebagai persentase progres.
 8. **Assessment History**: hasil assessment disimpan di database sehingga pengguna dapat melihat riwayat dan perubahannya dari waktu ke waktu.
+
+**Aturan skor (ScoringRules):**
+- Level: skor >= 80 "Siap", skor >= 40 "Cukup Siap", di bawah 40 "Belum Siap"
+- Target per dimensi: ditentukan per dimensi di tabel `preparedness_dimensions` (kolom `passing_threshold`); saat ini bernilai 75 untuk kelima dimensi
+- Prioritas rekomendasi: dimensi yang skornya di bawah targetnya mendapat prioritas "Tinggi" bila skor di bawah 40, dan "Sedang" bila skor 40 atau lebih
 
 **Alur penyusunan assessment:** Sumber Resmi/Literatur → Preparedness Dimension → Indicator → Assessment Question → Answer Option → Score → Preparedness Gap → Recommendation → Checklist
 

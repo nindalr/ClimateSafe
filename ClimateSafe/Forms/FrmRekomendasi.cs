@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -81,7 +81,6 @@ namespace ClimateSafe
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
-        private readonly RecommendationService recommendationService = new RecommendationService();
         private readonly RecommendationRepository recommendationRepository = new RecommendationRepository();
 
         private BufferedPanel recScroll;
@@ -199,28 +198,19 @@ namespace ClimateSafe
                         scores = recommendationRepository.GetDimensionScores(
                             Session.CurrentUser.UserId, session.AssessmentId);
 
-                        List<DimensionGap> gaps = new List<DimensionGap>();
                         foreach (DimensionScore s in scores)
                         {
                             hazardId = s.HazardId;
-                            if (s.Score < s.PassingThreshold)
-                            {
-                                gaps.Add(new DimensionGap(s.DimensionId, s.DimensionName, s.Score));
-                            }
                         }
-                        if (gaps.Count > 0)
-                        {
-                            recommendations = recommendationService.GenerateRecommendations(
-                                new Hazard(hazardId, session.HazardName), gaps);
-                        }
+                        recommendations = recommendationRepository.GetRecommendations(session.AssessmentId);
                     }
                 }
 
                 RebuildContent(session, scores, recommendations, hazardId);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi API.",
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
                 {
@@ -811,10 +801,6 @@ namespace ClimateSafe
                     {
                         Nav.ShowEdukasi(this);
                     }
-                    else if (nama != "Rekomendasi")
-                    {
-                        Info("Menu " + nama + " dibuka.");
-                    }
                 });
                 menuItems.Add(item);
             }
@@ -822,7 +808,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 138;
+            bottom.Height = 89;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -832,20 +818,8 @@ namespace ClimateSafe
             topLine.BackColor = line;
             bottom.Controls.Add(topLine);
 
-            Label settingsIcon = AddSymbol(bottom, "⚙", 24, 24, 24, 24, 12f, muted);
-            Label settingsText = AddAligned(bottom, "Pengaturan", 56, 24, 150, 22, 10f, false,
-                muted, ContentAlignment.MiddleLeft);
-            EventHandler openSettings = delegate (object sender, EventArgs e)
-            {
-                Info("Menu Pengaturan dibuka.");
-            };
-            settingsIcon.Cursor = Cursors.Hand;
-            settingsIcon.Click += openSettings;
-            settingsText.Cursor = Cursors.Hand;
-            settingsText.Click += openSettings;
-
             FocusCard user = new FocusCard();
-            user.Bounds = new Rectangle(16, 65, 223, 57);
+            user.Bounds = new Rectangle(16, 16, 223, 57);
             user.Radius = 12;
             user.Fill = Color.White;
             user.BorderColor = line;

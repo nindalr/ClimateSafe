@@ -1,0 +1,114 @@
+@ClimateSafe.Api_HostAddress = http://localhost:5028
+
+GET {{ClimateSafe.Api_HostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/hazards
+Accept: application/json
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/hazards/1/questions
+Accept: application/json
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/education/hazards/1
+Accept: application/json
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/education?hazardId=1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+Content-Type: application/json
+
+{ "hazardId": 1, "title": "Judul materi", "body": "Ringkasan yang telah disetujui tim.", "sourceName": null, "sourceUrl": null }
+
+###
+
+# Ganti 1 dengan contentId dari respons pembuatan materi.
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/education/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+PUT {{ClimateSafe.Api_HostAddress}}/api/admin/education/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+Content-Type: application/json
+
+{ "title": "Judul materi", "body": "Ringkasan yang telah disetujui tim.", "sourceName": null, "sourceUrl": null }
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education/1/publish
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education/1/unpublish
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/account/register
+Content-Type: application/json
+
+{ "name": "Pengguna Contoh", "email": "pengguna@example.com", "password": "contoh-password" }
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/account/login
+Content-Type: application/json
+
+{ "email": "pengguna@example.com", "password": "contoh-password" }
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/account/me
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/users
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+# Contoh saja: ganti UUID dan ID pilihan sesuai katalog pada database Anda.
+POST {{ClimateSafe.Api_HostAddress}}/api/assessments
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+Content-Type: application/json
+
+{ "submissionKey": "00000000-0000-0000-0000-000000000001", "hazardId": 1, "optionIds": [1, 5, 9, 13, 17] }
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments/1/checklist
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+PATCH {{ClimateSafe.Api_HostAddress}}/api/checklist/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+Content-Type: application/json
+
+{ "isCompleted": true }
+
+###
