@@ -48,6 +48,7 @@ Gunakan HTTPS saat mengirim password dan token melalui jaringan.
 Riwayat dan checklist memerlukan token login yang sama:
 
 - `GET /api/assessments` menampilkan daftar asesmen dan jumlah checklist.
+- `GET /api/assessments/sessions` menampilkan daftar asesmen beserta checklist-nya.
 - `GET /api/assessments/{id}` menampilkan hasil, jawaban, skor per dimensi, dan checklist.
 - `GET /api/assessments/{id}/checklist` menampilkan checklist satu asesmen.
 - `PATCH /api/checklist/{id}` mengubah status dengan body `{ "isCompleted": true }`
@@ -56,6 +57,8 @@ Riwayat dan checklist memerlukan token login yang sama:
 Data hanya tersedia untuk pemilik asesmen. Target dimensi pada riwayat mengikuti
 nilai database saat ini. Skor per dimensi dihitung dengan skor maksimum jawaban 3,
 sesuai aturan aplikasi desktop saat ini.
+Detail juga menyertakan rekomendasi yang dihitung ulang berdasarkan target dan
+katalog rekomendasi saat ini. Checklist menyimpan deskripsi saat asesmen dibuat.
 
 `POST /api/assessments` menerima token login dan JSON berisi `submissionKey` (UUID),
 `hazardId`, serta `optionIds` yang mencakup satu pilihan untuk setiap pertanyaan.

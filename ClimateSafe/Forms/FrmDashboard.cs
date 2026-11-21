@@ -901,7 +901,7 @@ namespace ClimateSafe
             }
             catch (Exception)
             {
-                MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi API.",
                     "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             finally { dashPage.ResumeLayout(true); }

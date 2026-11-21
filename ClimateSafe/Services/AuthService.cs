@@ -1,31 +1,28 @@
-﻿using System;
+using System.Net;
 
-namespace ClimateSafe.Auth
+namespace ClimateSafe.Auth;
+
+public class AuthService
 {
-    public class AuthService
+    public bool Register(string name, string email, string password)
     {
-        private readonly UserRepository _repo = new UserRepository();
+        try { ApiClient.Post<object>("api/account/register", new { name, email, password }); return true; }
+        catch (ApiException ex) when (ex.Status == HttpStatusCode.Conflict) { return false; }
+    }
 
-        public bool Register(string name, string email, string password)
+    public UserAccount? Login(string email, string password)
+    {
+        try
         {
-            name = name.Trim();
-            email = email.Trim().ToLower();
-
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Nama tidak boleh kosong");
-            if (!email.Contains("@") || !email.Contains("."))
-                throw new ArgumentException("Format email tidak valid");
-            if (password.Length < 6)
-                throw new ArgumentException("Password minimal 6 karakter");
-
-            return _repo.Register(name, email, PasswordHasher.Hash(password));
+            ApiClient.Token = null;
+            var result = ApiClient.Post<ApiLogin>("api/account/login", new { email, password })
+                ?? throw new InvalidOperationException("Respons login tidak tersedia.");
+            ApiClient.Token = result.Token;
+            var account = result.Account;
+            return account.Role == "Admin"
+                ? new Admin(account.Id, account.Name, account.Email, "", account.Role, account.Status, account.CreatedAt)
+                : new User(account.Id, account.Name, account.Email, "", account.Role, account.Status, account.CreatedAt);
         }
-
-        public UserAccount? Login(string email, string password)
-        {
-            UserAccount? user = _repo.GetByEmail(email.Trim().ToLower());
-            if (user != null && user.Login(password)) return user;
-            return null;
-        }
+        catch (ApiException ex) when (ex.Status == HttpStatusCode.Unauthorized) { return null; }
     }
 }

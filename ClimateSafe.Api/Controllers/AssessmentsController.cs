@@ -32,6 +32,10 @@ public sealed class AssessmentsController(AssessmentHistoryRepository repository
     public async Task<ActionResult<IReadOnlyList<AssessmentSummary>>> GetAll(CancellationToken ct) =>
         Ok(await repository.GetAllAsync(UserId, ct));
 
+    [HttpGet("sessions")]
+    public async Task<ActionResult<IReadOnlyList<AssessmentSession>>> GetSessions(CancellationToken ct) =>
+        Ok(await repository.GetSessionsAsync(UserId, ct));
+
     [HttpGet("{id:int}")]
     public async Task<ActionResult<AssessmentDetail>> GetDetail(int id, CancellationToken ct)
     {

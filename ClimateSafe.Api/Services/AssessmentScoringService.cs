@@ -20,5 +20,7 @@ internal static class AssessmentScoringService
         answer.Score * 100.0 / MaximumAnswerScore < answer.Threshold;
 
     public static string Priority(ScoredAnswer answer) =>
-        answer.Score * 100.0 / MaximumAnswerScore < HighPriorityBelow ? "Tinggi" : "Sedang";
+        Priority(answer.Score * 100.0 / MaximumAnswerScore);
+
+    public static string Priority(double score) => score < HighPriorityBelow ? "Tinggi" : "Sedang";
 }
