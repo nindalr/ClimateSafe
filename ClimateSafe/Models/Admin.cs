@@ -27,7 +27,7 @@ namespace ClimateSafe
 
         public override Form CreateMainForm()
         {
-            return new FormAdminPanel(this);
+            return new FrmAdmin(this);
         }
 
         public void ManageUser(int userId)
