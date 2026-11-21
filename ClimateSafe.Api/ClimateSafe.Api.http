@@ -10,6 +10,11 @@ Accept: application/json
 
 ###
 
+GET {{ClimateSafe.Api_HostAddress}}/api/hazards/1/questions
+Accept: application/json
+
+###
+
 POST {{ClimateSafe.Api_HostAddress}}/api/account/register
 Content-Type: application/json
 

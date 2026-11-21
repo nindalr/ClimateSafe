@@ -16,16 +16,23 @@ psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migra
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/001_assessment_checklist.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/002_assessment_history.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/003_account_sessions.sql
+psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/004_question_catalog.sql
 ```
 
 Skrip ini tidak dijalankan secara otomatis saat API dimulai. `000_users.sql`
 menyiapkan skema akun baru; pengguna yang sudah ada tidak dihapus. Migrasi 003
 membuat tabel sesi dan indeks email yang tidak membedakan huruf besar dan kecil.
 Email duplikat pada database lama perlu diselesaikan sebelum menjalankan migrasi.
+Migrasi 004 menambahkan pilihan jawaban dan katalog awal. Pertanyaan yang sudah
+ada untuk hazard dan dimensi yang sama dipertahankan, termasuk ID dan teksnya.
+ID baru mengikuti format `hazard_id * 100 + dimension_id`; jika ID tersebut sudah
+dipakai oleh kombinasi lain, migrasi gagal dan transaksi dibatalkan untuk ditinjau.
 
 Gunakan `ClimateSafe.Api.http` untuk memanggil `GET /health` dan `GET /api/hazards`.
 Endpoint health menunjukkan bahwa proses API berjalan, sedangkan endpoint hazards
 memerlukan koneksi PostgreSQL dan tabel `hazards` yang sudah diinisialisasi.
+`GET /api/hazards/{id}/questions` mengembalikan pertanyaan, keterangan, dan pilihan
+jawaban yang diurutkan. Bobot pilihan disimpan di server dan tidak dikirim ke client.
 
 Endpoint akun menyediakan `POST /api/account/register`, `POST /api/account/login`,
 `GET /api/account/me`, `PATCH /api/account/me`, dan `POST /api/account/logout`.
