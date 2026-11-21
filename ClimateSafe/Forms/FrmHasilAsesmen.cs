@@ -184,8 +184,6 @@ namespace ClimateSafe
         private const int HeadH = 52;
         private const int DimRowH = 64;
         // Aturan skor berasal dari ScoringRules.
-        private const double PassingTarget = ScoringRules.DimensionTarget;
-        private const double HighPriorityBelow = ScoringRules.HighPriorityBelow;
         private const string NotReadyLevel = ScoringRules.NotReadyLevel;
         private const string HighPriority = ScoringRules.HighPriority;
         private const string MediumPriority = ScoringRules.MediumPriority;
@@ -382,7 +380,7 @@ namespace ClimateSafe
             RoundPanel card = Card(host, 0, top, w, SummaryH, 16, Color.White, line);
             Stretch(card, host, 0, 0);
 
-            bool low = data.OverallScore < HighPriorityBelow;
+            bool low = data.OverallScore < AssessmentRules.HighPriorityBelow;
             ScoreRing ring = new ScoreRing();
             ring.Bounds = new Rectangle(24, 24, 120, 120);
             ring.Thickness = 10;
@@ -414,8 +412,7 @@ namespace ClimateSafe
 
             // 2. Dimensi di bawah target
             int col2 = colLeft + colW + ColGap;
-            AddText(card, "Dimensi di bawah target " + ScoringRules.TargetText,
-                col2, 36, colW, 16, 9f, true, muted);
+            AddText(card, "Dimensi di bawah target", col2, 36, colW, 16, 9f, true, muted);
             AddText(card, data.GapCount + " dari 5", col2, 60, colW, 30, 18f, true, ink);
 
             // 3. Asesmen
@@ -437,13 +434,16 @@ namespace ClimateSafe
             AddAligned(card, "Skor per dimensi", 24, 0, 240, HeadH, 11f, true, titleBlue,
                 ContentAlignment.MiddleLeft);
 
-            string targetText = "Target " + ScoringRules.TargetText;
-            int markerTextW = Measure(targetText, 9f, FontStyle.Regular);
+                        var targets = data.Dimensions.Select(d => d.PassingThreshold).Distinct().ToList();
+            string targetText = targets.Count == 1
+                ? "Target " + targets[0].ToString("0")
+                : "Target tiap dimensi";
+            int markerTextW = LabelWidth(targetText, 9f, FontStyle.Regular);
             Panel marker = new Panel();
             marker.Bounds = new Rectangle(w - 24 - markerTextW - 8 - 2, (HeadH - 12) / 2, 2, 12);
             marker.BackColor = muted;
             card.Controls.Add(marker);
-            AddAligned(card, targetText, w - 24 - markerTextW, 0, markerTextW + 4, HeadH, 9f, false, muted,
+            AddAligned(card, targetText, w - 24 - markerTextW, 0, markerTextW, HeadH, 9f, false, muted,
                 ContentAlignment.MiddleLeft);
 
             Panel headLine = new Panel();
@@ -460,17 +460,19 @@ namespace ClimateSafe
                 row.BackColor = Color.White;
                 card.Controls.Add(row);
 
+                int nameH = Math.Max(18, LineHeight(10f, FontStyle.Bold));
+
                 string scoreText = RoundScore(dim.Score) + "/100";
-                int scoreW = Measure(scoreText, 10f, FontStyle.Bold) + 8;
-                AddAligned(row, scoreText, w - 24 - scoreW, 10, scoreW, 18, 10f, true, ink,
+                int scoreW = LabelWidth(scoreText, 10f, FontStyle.Bold);
+                AddAligned(row, scoreText, w - 24 - scoreW, 10, scoreW, nameH, 10f, true, ink,
                     ContentAlignment.MiddleRight);
 
-                int nameW = Measure(dim.DimensionName, 10f, FontStyle.Bold) + 4;
-                AddText(row, dim.DimensionName, 24, 10, nameW, 18, 10f, true, ink);
+                int nameW = LabelWidth(dim.DimensionName, 10f, FontStyle.Bold);
+                AddText(row, dim.DimensionName, 24, 10, nameW, nameH, 10f, true, ink);
 
-                if (dim.Score < PassingTarget)
+                if (dim.Score < dim.PassingThreshold)
                 {
-                    bool high = dim.Score < HighPriorityBelow;
+                    bool high = dim.Score < AssessmentRules.HighPriorityBelow;
                     int tagW = Measure("Perlu ditingkatkan", 8f, FontStyle.Bold) + 16;
                     RoundPanel tag = Card(row, 24 + nameW + 8, 11, tagW, 20, 10,
                         high ? coralSoft : pillBlueBg, Color.Empty);
@@ -481,8 +483,8 @@ namespace ClimateSafe
                 TargetBar bar = new TargetBar();
                 bar.Bounds = new Rectangle(24, 36, w - 48, 14);
                 bar.Value = (float)(dim.Score / 100.0);
-                bar.Target = (float)(PassingTarget / 100.0);
-                bar.BarColor = dim.Score < HighPriorityBelow ? barHigh : navy;
+                bar.Target = (float)(dim.PassingThreshold / 100.0);
+                bar.BarColor = dim.Score < AssessmentRules.HighPriorityBelow ? barHigh : navy;
                 bar.TrackColor = barTrack;
                 bar.TargetColor = muted;
                 row.Controls.Add(bar);
@@ -499,7 +501,7 @@ namespace ClimateSafe
                 }
             }
 
-            int footerH = BuildFooter(card, y, w,
+            int footerH = BuildFooter(card, y, w, w - 48,
                 "Skor hanya menggambarkan kondisi berdasarkan indikator asesmen aplikasi.");
             int total = y + footerH;
             card.Height = total;
@@ -521,7 +523,7 @@ namespace ClimateSafe
             if (data.Recommendations.Count > 0)
             {
                 string orderText = "Diurutkan dari prioritas tertinggi";
-                int orderW = Measure(orderText, 9f, FontStyle.Regular) + 8;
+                int orderW = LabelWidth(orderText, 9f, FontStyle.Regular);
                 Label order = AddAligned(card, orderText, w - 24 - orderW, 0, orderW, HeadH, 9f, false,
                     muted, ContentAlignment.MiddleRight);
                 PinRight(order, card, 24);
@@ -567,6 +569,11 @@ namespace ClimateSafe
 
                 int textX = 24 + 56 + 14;
                 int textW = Math.Max(160, w - textX - 24);
+                // Dibungkus pada lebar kartu tersempit (halaman di PageMinW) supaya teks tetap
+                // utuh saat jendela diperkecil; label sendiri tetap melebar mengikuti kartu.
+                int wrapW = Math.Max(160, PageMinW - (LeftCardW + ColGap) - textX - 24);
+                int nameH = Math.Max(18, LineHeight(10f, FontStyle.Bold));
+                int descH = Math.Max(19, LineHeight(9.5f, FontStyle.Regular));
 
                 for (int i = 0; i < data.Recommendations.Count; i++)
                 {
@@ -575,10 +582,10 @@ namespace ClimateSafe
                     List<string> lines;
                     using (Font f = UI.Body(9.5f, FontStyle.Regular))
                     {
-                        lines = WrapLines(rec.Description ?? "", f, textW);
+                        lines = WrapLines(rec.Description ?? "", f, wrapW);
                     }
 
-                    int itemH = 16 + 18 + 4 + Math.Max(1, lines.Count) * 19 + 16;
+                    int itemH = 16 + nameH + 4 + Math.Max(1, lines.Count) * descH + 16;
 
                     BufferedPanel item = new BufferedPanel();
                     item.Bounds = new Rectangle(0, y, w, itemH);
@@ -598,12 +605,13 @@ namespace ClimateSafe
                     string dimensionName;
                     if (!dimensionNames.TryGetValue(dimensionId, out dimensionName)) dimensionName = "";
 
-                    Label nameLabel = AddText(item, dimensionName, textX, 16, textW, 18, 10f, true, ink);
+                    Label nameLabel = AddText(item, dimensionName, textX, 16, textW, nameH, 10f, true, ink);
                     Stretch(nameLabel, item, textX, 24);
 
                     for (int k = 0; k < lines.Count; k++)
                     {
-                        Label lineLabel = AddAligned(item, lines[k], textX, 38 + k * 19, textW, 19,
+                        Label lineLabel = AddAligned(item, lines[k], textX,
+                            16 + nameH + 4 + k * descH, textW, descH,
                             9.5f, false, subInk, ContentAlignment.MiddleLeft);
                         Stretch(lineLabel, item, textX, 24);
                     }
@@ -623,20 +631,22 @@ namespace ClimateSafe
             }
 
             int footerH = BuildFooter(card, y, w,
+                PageMinW - (LeftCardW + ColGap) - 48,
                 "Rekomendasi bersifat umum, bukan keputusan profesional untuk kondisi darurat tertentu.");
             int total = y + footerH;
             card.Height = total;
             return total;
         }
 
-        private int BuildFooter(RoundPanel card, int top, int w, string text)
+        private int BuildFooter(RoundPanel card, int top, int w, int wrapW, string text)
         {
             List<string> lines;
+            int lineH = Math.Max(18, LineHeight(9f, FontStyle.Regular));
             using (Font f = UI.Body(9f, FontStyle.Regular))
             {
-                lines = WrapLines(text, f, Math.Max(160, w - 48));
+                lines = WrapLines(text, f, Math.Max(160, wrapW));
             }
-            int h = 1 + 16 + Math.Max(1, lines.Count) * 18 + 16;
+            int h = 1 + 16 + Math.Max(1, lines.Count) * lineH + 16;
 
             BottomBand band = new BottomBand();
             band.Fill = bandBg;
@@ -648,7 +658,7 @@ namespace ClimateSafe
 
             for (int i = 0; i < lines.Count; i++)
             {
-                Label lineLabel = AddText(band, lines[i], 23, 16 + i * 18, w - 48, 18, 9f, false, muted);
+                Label lineLabel = AddText(band, lines[i], 23, 16 + i * lineH, w - 48, lineH, 9f, false, muted);
                 Stretch(lineLabel, band, 23, 23);
             }
 
@@ -731,6 +741,7 @@ namespace ClimateSafe
             return when.ToString("dd MMM yyyy", CultureInfo.GetCultureInfo("id-ID"));
         }
 
+        // Lebar kotak visual (pil dan tombol yang menggambar sendiri dengan NoPadding).
         private static int Measure(string text, float size, FontStyle style)
         {
             using (Font f = UI.Body(size, style))
@@ -738,6 +749,28 @@ namespace ClimateSafe
                 return TextRenderer.MeasureText(text, f,
                     new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
             }
+        }
+
+        // Lebar dan tinggi baris untuk Label: diukur seperti Label menggambar (dengan padding
+        // bawaan TextRenderer), sehingga teks tidak membungkus lalu terpotong.
+        private static int LabelWidth(string text, Font font)
+        {
+            return TextRenderer.MeasureText(text, font).Width;
+        }
+
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style)) return LabelWidth(text, f);
+        }
+
+        private static int LineHeight(Font font)
+        {
+            return TextRenderer.MeasureText("Hg", font).Height;
+        }
+
+        private static int LineHeight(float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style)) return LineHeight(f);
         }
 
         private CheckMark AddCheck(Control parent, int x, int y, int size, Color color)
@@ -860,8 +893,7 @@ namespace ClimateSafe
             foreach (string word in words)
             {
                 string test = cur.Length == 0 ? word : cur + " " + word;
-                int tw = TextRenderer.MeasureText(test, font,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                int tw = LabelWidth(test, font);
                 if (tw > maxWidth && cur.Length > 0)
                 {
                     lines.Add(cur);

@@ -49,8 +49,8 @@ ClimateSafe **bukan** sistem prediksi bencana dan **bukan** sistem peringatan di
 
 **Aturan skor (ScoringRules):**
 - Level: skor >= 80 "Siap", skor >= 40 "Cukup Siap", di bawah 40 "Belum Siap"
-- Target per dimensi: 80 (nilai yang sama dengan batas "Siap")
-- Prioritas rekomendasi: skor dimensi di bawah 40 "Tinggi", 40 sampai di bawah 80 "Sedang"
+- Target per dimensi: ditentukan per dimensi di tabel `preparedness_dimensions` (kolom `passing_threshold`); saat ini bernilai 75 untuk kelima dimensi
+- Prioritas rekomendasi: dimensi yang skornya di bawah targetnya mendapat prioritas "Tinggi" bila skor di bawah 40, dan "Sedang" bila skor 40 atau lebih
 
 **Alur penyusunan assessment:** Sumber Resmi/Literatur → Preparedness Dimension → Indicator → Assessment Question → Answer Option → Score → Preparedness Gap → Recommendation → Checklist
 

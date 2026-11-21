@@ -8,7 +8,7 @@ namespace ClimateSafe.Auth
     public class FormAdminPanel : Form
     {
         private readonly UserAccount _admin;
-        private readonly UserRepository _repo = new UserRepository();
+        private readonly AdminService _adminService = new AdminService();
 
         private readonly DataGridView dgvData = new DataGridView();
         private readonly TextBox txtName = new TextBox();
@@ -16,9 +16,10 @@ namespace ClimateSafe.Auth
         private readonly Button btnUpdate = new Button();
         private readonly Button btnToggle = new Button();
         private readonly Button btnDelete = new Button();
+        private readonly Button btnResetPassword = new Button();
 
         private int selectedId = -1;
-        private string selectedStatus = "";
+        private string selectedName = "";
 
         public FormAdminPanel(UserAccount admin)
         {
@@ -61,6 +62,12 @@ namespace ClimateSafe.Auth
             btnLoad.Size = new Size(100, 32);
             btnLoad.Click += btnLoad_Click;
 
+            btnResetPassword.Text = "Reset Password";
+            btnResetPassword.Location = new Point(20, 460);
+            btnResetPassword.Size = new Size(140, 32);
+            btnResetPassword.Click += btnResetPassword_Click;
+            ClientSize = new Size(780, 510);
+
             dgvData.Location = new Point(20, 105);
             dgvData.Size = new Size(740, 350);
             dgvData.ReadOnly = true;
@@ -77,6 +84,7 @@ namespace ClimateSafe.Auth
             Controls.Add(btnToggle);
             Controls.Add(btnDelete);
             Controls.Add(btnLoad);
+            Controls.Add(btnResetPassword);
             Controls.Add(dgvData);
 
             Load += (s, e) => LoadData();
@@ -86,9 +94,9 @@ namespace ClimateSafe.Auth
         {
             try
             {
-                dgvData.DataSource = _repo.GetAllUsers();
+                dgvData.DataSource = _adminService.GetUsers(_admin);
                 selectedId = -1;
-                selectedStatus = "";
+                selectedName = "";
                 txtName.Clear();
             }
             catch (Exception ex)
@@ -108,8 +116,8 @@ namespace ClimateSafe.Auth
             if (e.RowIndex < 0) return;
             DataGridViewRow r = dgvData.Rows[e.RowIndex];
             selectedId = Convert.ToInt32(r.Cells["user_id"].Value);
-            selectedStatus = r.Cells["status"].Value?.ToString() ?? "";
-            txtName.Text = r.Cells["name"].Value?.ToString() ?? "";
+            selectedName = r.Cells["name"].Value?.ToString() ?? "";
+            txtName.Text = selectedName;
         }
 
         private bool EnsureSelected()
@@ -134,12 +142,13 @@ namespace ClimateSafe.Auth
             }
             try
             {
-                if (_repo.UpdateName(selectedId, txtName.Text.Trim()))
+                if (_adminService.UpdateName(_admin, selectedId, txtName.Text))
                 {
                     MessageBox.Show("Data user berhasil diupdate", "Well Done!",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                 }
+                else MessageBox.Show("Akun tidak ditemukan. Muat ulang daftar pengguna.", "Admin");
             }
             catch (Exception ex)
             {
@@ -157,15 +166,16 @@ namespace ClimateSafe.Auth
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            string newStatus = selectedStatus == "Active" ? "Inactive" : "Active";
             try
             {
-                if (_repo.SetStatus(selectedId, newStatus))
+                string? newStatus = _adminService.ToggleStatus(_admin, selectedId);
+                if (newStatus != null)
                 {
                     MessageBox.Show("Status akun menjadi " + newStatus, "Well Done!",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                 }
+                else MessageBox.Show("Akun tidak ditemukan atau statusnya tidak valid.", "Admin");
             }
             catch (Exception ex)
             {
@@ -183,23 +193,76 @@ namespace ClimateSafe.Auth
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (MessageBox.Show("Apakah benar anda ingin menghapus data " + txtName.Text + " ?",
+            if (MessageBox.Show("Apakah benar anda ingin menghapus data " + selectedName + " ?",
                 "Hapus data terkonfirmasi", MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                 MessageBoxDefaultButton.Button1) != DialogResult.Yes) return;
             try
             {
-                if (_repo.DeleteUser(selectedId))
+                if (_adminService.DeleteUser(_admin, selectedId))
                 {
                     MessageBox.Show("Data user berhasil dihapus", "Well Done!",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     LoadData();
                 }
+                else MessageBox.Show("Akun tidak ditemukan. Muat ulang daftar pengguna.", "Admin");
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error:" + ex.Message, "Delete FAIL!!",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void btnResetPassword_Click(object? sender, EventArgs e)
+        {
+            if (!EnsureSelected()) return;
+            using var dialog = new Form
+            {
+                Text = "Reset Password", StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(420, 190), FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false
+            };
+            var instruction = new Label { Text = "Password baru untuk pengguna #" + selectedId,
+                Location = new Point(20, 18), AutoSize = true };
+            var passwordLabel = new Label { Text = "Password baru", Location = new Point(20, 55), AutoSize = true };
+            var password = new TextBox { Location = new Point(170, 52), Width = 225, UseSystemPasswordChar = true };
+            var confirmLabel = new Label { Text = "Ulangi password", Location = new Point(20, 95), AutoSize = true };
+            var confirm = new TextBox { Location = new Point(170, 92), Width = 225, UseSystemPasswordChar = true };
+            var save = new Button { Text = "Simpan", Location = new Point(215, 135), Width = 85 };
+            var cancel = new Button { Text = "Batal", Location = new Point(310, 135), Width = 85, DialogResult = DialogResult.Cancel };
+            save.Click += (_, _) =>
+            {
+                if (password.Text != confirm.Text)
+                {
+                    MessageBox.Show(dialog, "Konfirmasi password tidak cocok.", "Reset Password");
+                    return;
+                }
+                try
+                {
+                    if (!_adminService.ResetPassword(_admin, selectedId, password.Text))
+                    {
+                        MessageBox.Show(dialog, "Akun tidak ditemukan. Muat ulang daftar pengguna.", "Reset Password");
+                        return;
+                    }
+                    password.Clear();
+                    confirm.Clear();
+                    dialog.DialogResult = DialogResult.OK;
+                }
+                catch (ArgumentException ex)
+                {
+                    MessageBox.Show(dialog, ex.Message, "Reset Password", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                catch (Exception)
+                {
+                    MessageBox.Show(dialog, "Password belum dapat direset. Periksa hak akses dan koneksi database.",
+                        "Reset Password", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+            dialog.Controls.AddRange(new Control[] { instruction, passwordLabel, password, confirmLabel, confirm, save, cancel });
+            dialog.AcceptButton = save;
+            dialog.CancelButton = cancel;
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+                MessageBox.Show(this, "Password berhasil direset.", "Reset Password");
         }
     }
 }

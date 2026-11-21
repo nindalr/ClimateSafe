@@ -78,9 +78,6 @@ namespace ClimateSafe
         private const int PageMinW = 960;
         private const int ContentTop = 104;
 
-        // Aturan skor berasal dari ScoringRules.
-        private const double PassingTarget = ScoringRules.DimensionTarget;
-        private const double HighPriorityBelow = ScoringRules.HighPriorityBelow;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
@@ -206,7 +203,7 @@ namespace ClimateSafe
                         foreach (DimensionScore s in scores)
                         {
                             hazardId = s.HazardId;
-                            if (s.Score < PassingTarget)
+                            if (s.Score < s.PassingThreshold)
                             {
                                 gaps.Add(new DimensionGap(s.DimensionId, s.DimensionName, s.Score));
                             }
@@ -311,7 +308,7 @@ namespace ClimateSafe
             List<DimensionScore> good = new List<DimensionScore>();
             foreach (DimensionScore s in scores)
             {
-                if (s.Score >= PassingTarget) good.Add(s);
+                if (s.Score >= s.PassingThreshold) good.Add(s);
             }
             if (good.Count > 0)
             {
@@ -413,7 +410,7 @@ namespace ClimateSafe
             Stretch(card, host, 0, 0);
 
             AddText(card, "Tindakan yang disarankan", 24, 17, 320, 24, 12f, true, ink);
-            string hint = "Skor dimensi · garis tegak = target " + ScoringRules.TargetText;
+            string hint = "Skor dimensi · garis tegak = target dimensi";
             int hintW = Measure(hint, 8.5f, FontStyle.Regular) + 8;
             Label hintLabel = AddAligned(card, hint, w - 24 - hintW, 18, hintW, 20, 8.5f, false, muted,
                 ContentAlignment.MiddleRight);
@@ -446,9 +443,9 @@ namespace ClimateSafe
 
             string pillText = isHigh ? "Prioritas Tinggi" : "Prioritas Sedang";
             string rangeText = isHigh
-                ? "· skor di bawah " + ScoringRules.HighPriorityBelowText
-                : "· skor " + ScoringRules.HighPriorityBelowText +
-                  " sampai di bawah " + ScoringRules.TargetText;
+                ? "· skor di bawah " + AssessmentRules.HighPriorityBelow.ToString("0")
+                : "· skor " + AssessmentRules.HighPriorityBelow.ToString("0") +
+                  " sampai di bawah target dimensi";
 
             int pillW = Measure(pillText, 8f, FontStyle.Bold) + 24;
             RoundPanel pill = Card(band, 24, 8, pillW, 24, 12,
@@ -520,7 +517,7 @@ namespace ClimateSafe
             TargetBar bar = new TargetBar();
             bar.Bounds = new Rectangle(200 - 160, 56, 160, 16);
             bar.Value = (float)(value / 100.0);
-            bar.Target = (float)(PassingTarget / 100.0);
+            bar.Target = (float)((score?.PassingThreshold ?? 0) / 100.0);
             bar.BarColor = isHigh ? barHigh : navy;
             bar.TrackColor = barTrack;
             bar.TargetColor = ink;

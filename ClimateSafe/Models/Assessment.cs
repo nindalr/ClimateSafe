@@ -6,7 +6,6 @@ namespace ClimateSafe
 {
     internal class Assessment
     {
-        private const int MaximumAnswerScore = 3;
         private int _assessmentId;
         private DateTime _assessmentDate;
         private double _overallScore;
@@ -67,7 +66,7 @@ namespace ClimateSafe
                 totalScore += answer.CalculateScore();
             }
 
-            int maximumScore = _answers.Count * MaximumAnswerScore;
+            int maximumScore = _answers.Count * AssessmentRules.MaximumAnswerScore;
             _overallScore = (double)totalScore / maximumScore * 100.0;
             _level = DetermineLevel(_overallScore);
             return _overallScore;
@@ -149,7 +148,7 @@ namespace ClimateSafe
 
         private static void ValidateScore(int score)
         {
-            if (score < 0 || score > MaximumAnswerScore)
+            if (score < 0 || score > AssessmentRules.MaximumAnswerScore)
             {
                 throw new ArgumentOutOfRangeException(nameof(score), score,
                     "Skor jawaban harus berada dalam rentang 0 sampai 3.");
@@ -158,7 +157,9 @@ namespace ClimateSafe
 
         private static string DetermineLevel(double score)
         {
-            return ScoringRules.GetLevel(score);
+            if (score >= AssessmentRules.ReadyScore) return "Siap";
+            if (score >= AssessmentRules.ModeratelyReadyScore) return "Cukup Siap";
+            return "Belum Siap";
         }
     }
 }

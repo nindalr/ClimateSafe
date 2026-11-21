@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,7 +26,7 @@ namespace ClimateSafe
 
                 // ID katalog lokal dibedakan per hazard dan dimensi.
                 int recommendationId = hazardId * 100 + gap.DimensionId;
-                string priority = ScoringRules.GetPriority(gap.Score);
+                string priority = gap.Score < AssessmentRules.HighPriorityBelow ? "Tinggi" : "Sedang";
                 recommendations.Add(new Recommendation(recommendationId,
                     advice[gap.DimensionId - 1], priority));
             }
