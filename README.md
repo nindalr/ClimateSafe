@@ -15,47 +15,29 @@ ClimateSafe adalah aplikasi desktop yang membantu pengguna mengetahui tingkat ke
 
 Panduan ini menjelaskan cara menginstal, mengatur database, dan menggunakan aplikasi ClimateSafe. Ikuti langkah-langkah berikut secara berurutan.
 
-### Langkah 1. Menyiapkan Database
+### Langkah 1. Menyiapkan database dan API
 
-Pastikan PostgreSQL sudah terinstal dan berjalan di komputer. Aplikasi ini dibuat dan diuji menggunakan PostgreSQL 18.
+Untuk pengembangan lokal, siapkan PostgreSQL dan jalankan migrasi 000 sampai 007 sesuai petunjuk di `ClimateSafe.Api/README.md`. Untuk database kosong, `database/setup.bat` juga dapat menyiapkan skema awal dan menjalankan migrasi 002 sampai 007. Perintah `setup.bat reset` menghapus database beserta seluruh datanya.
 
-1. Buka folder `database` yang tersedia dalam paket aplikasi.
-2. Klik dua kali file `setup.bat`.
-3. Jika diminta memasukkan password, ketik password PostgreSQL untuk pengguna `postgres`, lalu tekan Enter.
-4. Tunggu hingga proses selesai tanpa muncul pesan error.
+Pada terminal pertama, atur connection string untuk API dan jalankan API:
 
-Setelah berhasil, database dengan nama `climatesafe` akan dibuat dan sudah dilengkapi dengan tabel serta data awal yang dibutuhkan aplikasi.
-
-**Catatan:** Jika ingin mengulang proses dari awal, buka Command Prompt pada folder `database`, lalu jalankan perintah `setup.bat reset`. Perintah ini akan menghapus data lama dan membuat ulang database. Pastikan tidak ada data penting yang masih dibutuhkan.
-
-### Langkah 2. Mengatur Koneksi Database
-
-Aplikasi membutuhkan file `.env` untuk terhubung dengan database PostgreSQL.
-
-1. Buka folder aplikasi yang berisi file `ClimateSafe.exe`.
-2. Cari file `.env.example`, lalu buat salinannya.
-3. Ubah nama file salinan tersebut menjadi `.env`.
-4. Buka file `.env` menggunakan Notepad, kemudian isi pengaturannya seperti berikut:
-
-```env
-CLIMATESAFE_DB_HOST='localhost'
-CLIMATESAFE_DB_PORT='5432'
-CLIMATESAFE_DB_USERNAME='postgres'
-CLIMATESAFE_DB_NAME='climatesafe'
-CLIMATESAFE_DB_PASSWORD='password-postgres-kamu'
+```powershell
+$env:ConnectionStrings__ClimateSafe = 'Host=localhost;Port=5432;Database=climatesafe;Username=postgres;Password=PASSWORD_ANDA'
+dotnet run --project ClimateSafe.Api --launch-profile http
 ```
 
-5. Ganti `password-postgres-kamu` dengan password PostgreSQL milik pengguna `postgres` di komputer tersebut. Tanda kutip tunggal harus tetap digunakan.
-6. Jika pengaturan host, port, atau nama pengguna PostgreSQL berbeda, sesuaikan nilainya dengan konfigurasi yang digunakan.
-7. Simpan file `.env`.
+Sesuaikan koneksi dengan database Anda dan biarkan API berjalan. Buka `http://localhost:5028/health` untuk memeriksa proses API.
 
-Pastikan file `.env` berada dalam satu folder dengan `ClimateSafe.exe`.
+### Langkah 2. Menjalankan aplikasi desktop
 
-### Langkah 3. Menjalankan Aplikasi
+Pada terminal kedua, jalankan:
 
-Klik dua kali file `ClimateSafe.exe` untuk membuka aplikasi. Jika berhasil, halaman login akan muncul.
+```powershell
+$env:CLIMATESAFE_API_URL = 'http://localhost:5028'
+dotnet run --project ClimateSafe/ClimateSafe.csproj
+```
 
-Jika aplikasi gagal dibuka atau tidak dapat terhubung ke database, periksa pesan error yang muncul. Penjelasan lebih lanjut tersedia pada bagian **Jika Terjadi Masalah**.
+Alamat localhost dipakai secara default jika variabel tidak diatur. Untuk server selain localhost, gunakan HTTPS. Pengguna desktop tidak perlu memasukkan kredensial PostgreSQL.
 
 ### Langkah 4. Login ke Aplikasi
 
@@ -129,7 +111,7 @@ Setelah login menggunakan akun admin, pengguna akan masuk ke halaman khusus admi
 Berikut fitur yang tersedia:
 
 - **Kelola Pengguna:** Admin dapat mencari akun berdasarkan nama atau email, kemudian memilih akun yang ingin dikelola. Admin dapat mengubah nama pengguna, menonaktifkan atau mengaktifkan akun, serta menghapus akun. Tindakan menonaktifkan dan menghapus akun memerlukan konfirmasi terlebih dahulu. Admin juga tidak dapat menonaktifkan atau menghapus akun yang sedang digunakan untuk login.
-- **Kelola Konten:** Admin dapat mengubah ringkasan materi edukasi untuk setiap jenis bahaya (Banjir, Cuaca Ekstrem, dan Suhu Panas Ekstrem). Admin dapat mengedit, menyimpan, atau membatalkan perubahan. Konten yang sudah disimpan akan ditampilkan pada menu Edukasi pengguna. Jika berpindah ke bahaya lain sebelum menyimpan perubahan, aplikasi akan meminta konfirmasi.
+- **Kelola Konten:** Admin dapat membuat beberapa materi untuk setiap bahaya, menyimpan draft, mempublikasikan, dan menarik publikasi. Pengguna melihat materi yang telah dipublikasikan.
 - **Log & Monitoring:** Admin dapat memantau aktivitas aplikasi berdasarkan periode (hari ini, 7 hari terakhir, atau 30 hari terakhir) dan jenis bahaya. Halaman ini menampilkan jumlah seluruh pengguna, pengguna aktif, dan asesmen yang selesai. Tersedia juga tabel riwayat asesmen yang berisi waktu, nama pengguna, jenis bahaya, skor, dan tingkat kesiapan. Tombol Muat Ulang digunakan untuk memperbarui data.
 
 Untuk keluar dari akun admin, klik tombol **Keluar** di bagian kiri bawah halaman.
@@ -155,32 +137,16 @@ Jika ketiga skenario menghasilkan kategori yang sesuai, fitur utama asesmen suda
 
 ## Jika Terjadi Masalah
 
-Jika terjadi kesalahan, aplikasi akan menampilkan pesan singkat beserta bagian **Detail teknis** yang menjelaskan penyebabnya.
-
-Gunakan tabel berikut untuk mengetahui penyebab dan cara mengatasinya.
-
-| Pesan atau Kondisi | Penyebab dan Cara Mengatasi |
+| Pesan atau Kondisi | Pemeriksaan |
 |---|---|
-| Gagal terhubung ke database | PostgreSQL mungkin belum berjalan atau pengaturan dalam file `.env` belum benar. Periksa host, port, nama database, dan password. Setelah diperbaiki, tutup lalu buka kembali aplikasi. |
-| Password authentication failed | Password pada file `.env` tidak sesuai dengan password PostgreSQL. Periksa dan perbaiki password, kemudian buka kembali aplikasi. |
-| Muncul pesan "column ... does not exist" atau "relation ... does not exist" | Database belum disiapkan atau masih menggunakan struktur tabel yang lama. Jalankan kembali `setup.bat reset` sesuai petunjuk pada Langkah 1. |
-| Aplikasi tidak dapat dibuka | Pastikan file `.env` berada dalam satu folder dengan `ClimateSafe.exe`. Periksa juga apakah nama file benar-benar `.env`, bukan `.env.txt`. |
-| Tidak bisa login meskipun data akun sudah benar | Akun mungkin sedang dinonaktifkan oleh admin. Hubungi admin untuk memeriksa status akun. |
+| API tidak dapat dihubungi | Pastikan API berjalan dan `CLIMATESAFE_API_URL` menunjuk ke alamat yang benar. |
+| API gagal mengakses database | Periksa PostgreSQL dan `ConnectionStrings__ClimateSafe` pada terminal API. |
+| Tabel tidak ditemukan | Pastikan migrasi 000 sampai 007 telah dijalankan pada database yang digunakan API. |
+| Login gagal | Periksa email, password, dan status akun. |
 
-## Untuk Pengembang: Menjalankan Aplikasi dari Kode Sumber
+## Untuk Pengembang
 
-Jika ingin menjalankan ClimateSafe melalui kode sumber, pastikan .NET 10 SDK dan PostgreSQL sudah terinstal.
-
-Setelah database berhasil dibuat dan file `.env` sudah diatur, letakkan file `.env` di folder utama repository (root repository).
-
-Selanjutnya, buka terminal pada folder utama repository dan jalankan perintah berikut:
-
-```bash
-dotnet run --project ClimateSafe/ClimateSafe.csproj
-```
-
-Jika ingin membangun ulang aplikasi, pastikan ClimateSafe sudah ditutup terlebih dahulu. File aplikasi yang masih berjalan tidak dapat ditimpa selama proses pembangunan ulang.
-
+Project desktop dan API memerlukan .NET 10 SDK. Petunjuk koneksi dan migrasi database tersedia di `ClimateSafe.Api/README.md`.
 
 <img width="683" height="1154" alt="image" src="https://github.com/user-attachments/assets/5b9b892a-1113-48b4-88b7-7400b77ecbd3" />
 

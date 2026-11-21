@@ -249,6 +249,9 @@ namespace ClimateSafe
         private BufferedPanel content;
         private BufferedPanel contentCard;
         private string? selectedHazard;
+        private ApiEducation? publishedContent;
+        private List<ApiEducation> publishedContents = new();
+        private string? educationError;
 
         // Tujuan dari kartu Beranda; dipakai sekali saat data dimuat.
         public string? PendingHazard;
@@ -369,6 +372,7 @@ namespace ClimateSafe
                     selectedHazard = null;
                 }
 
+                LoadPublishedContent();
                 RebuildContent();
             }
             catch (Exception ex)
@@ -377,8 +381,27 @@ namespace ClimateSafe
                     "Edukasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 hazards.Clear();
                 selectedHazard = null;
-                if (content == null) RebuildContent();
+                publishedContent = null;
+                publishedContents.Clear();
+                educationError = "Data edukasi tidak dapat dimuat.";
+                RebuildContent();
             }
+        }
+
+        private void LoadPublishedContent()
+        {
+            int? selectedId = publishedContent?.ContentId;
+            publishedContent = null;
+            publishedContents.Clear();
+            educationError = null;
+            Hazard? hazard = hazards.Find(h => h.Name == selectedHazard);
+            if (hazard == null) return;
+            try
+            {
+                publishedContents = ApiClient.Get<List<ApiEducation>>($"api/education/hazards/{hazard.HazardId}") ?? new();
+                publishedContent = publishedContents.Find(x => x.ContentId == selectedId) ?? publishedContents.FirstOrDefault();
+            }
+            catch (Exception ex) { educationError = "Materi tidak dapat dimuat. " + ex.Message; }
         }
 
         // Pemetaan ikon sama dengan FrmRekomendasi.HazardGlyph.
@@ -470,6 +493,8 @@ namespace ClimateSafe
             }
 
             selectedHazard = hazardName;
+            publishedContent = null;
+            LoadPublishedContent();
             foreach (HazardCardView card in cards)
             {
                 card.Selected = string.Equals(card.HazardName, selectedHazard, StringComparison.Ordinal);
@@ -513,10 +538,36 @@ namespace ClimateSafe
             contentCard = holder;
             Stretch(holder, content, 0, 0);
 
-            string? summary = selectedHazard == null ? null : EducationContent.GetSummary(selectedHazard);
-            int h = selectedHazard == null
-                ? BuildHintCard(holder)
-                : BuildSummaryCard(holder, selectedHazard, summary);
+            int h;
+            if (selectedHazard == null) h = BuildHintCard(holder);
+            else
+            {
+                int summaryTop = 0;
+                if (publishedContents.Count > 0)
+                {
+                    AddText(holder, "Pilih materi", 0, 0, 250, 22, 10f, true, titleBlue);
+                    var articlePicker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList,
+                        Bounds = new Rectangle(0, 26, Math.Min(600, w), 30), Font = UI.Body(10f, FontStyle.Regular),
+                        DisplayMember = nameof(ApiEducation.Title), DataSource = publishedContents };
+                    articlePicker.SelectedItem = publishedContent;
+                    articlePicker.SelectedIndexChanged += (_, _) =>
+                    {
+                        if (articlePicker.SelectedItem is ApiEducation selected && selected.ContentId != publishedContent?.ContentId)
+                        {
+                            publishedContent = selected;
+                            BuildContentCard();
+                        }
+                    };
+                    holder.Controls.Add(articlePicker);
+                    summaryTop = 72;
+                }
+                var summaryHolder = new BufferedPanel { BackColor = bg, Bounds = new Rectangle(0, summaryTop, w, 240) };
+                holder.Controls.Add(summaryHolder);
+                Stretch(summaryHolder, holder, 0, 0);
+                int summaryHeight = BuildSummaryCard(summaryHolder, publishedContent?.Title ?? selectedHazard, publishedContent?.Body);
+                summaryHolder.Height = summaryHeight;
+                h = summaryTop + summaryHeight;
+            }
 
             holder.Height = h;
             content.Height = top + h;
@@ -577,7 +628,7 @@ namespace ClimateSafe
             if (string.IsNullOrWhiteSpace(summary))
             {
                 bodyH = 160;
-                Label empty = AddAligned(card, "Ringkasan materi untuk kategori ini belum tersedia.",
+                Label empty = AddAligned(card, educationError ?? "Ringkasan materi untuk kategori ini belum tersedia.",
                     24, HeadH + 1, Math.Max(200, w - 48), bodyH, 10f, false, muted,
                     ContentAlignment.MiddleCenter);
                 Stretch(empty, card, 24, 24);
@@ -585,6 +636,13 @@ namespace ClimateSafe
             else
             {
                 bodyH = BuildSummaryBody(card, summary, HeadH + 1 + 24) + 48;
+                string? source = publishedContent?.SourceName;
+                string? sourceUrl = publishedContent?.SourceUrl;
+                if (!string.IsNullOrWhiteSpace(source) || !string.IsNullOrWhiteSpace(sourceUrl))
+                {
+                    string sourceText = "Sumber: " + string.Join(" - ", new[] { source, sourceUrl }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                    bodyH += BuildSummaryBody(card, sourceText, HeadH + 1 + bodyH - 24) + 12;
+                }
             }
 
             BottomBand footer = new BottomBand();
@@ -763,6 +821,21 @@ namespace ClimateSafe
                 else
                 {
                     cur = test;
+                }
+                while (cur.Length > 1 && TextRenderer.MeasureText(cur, font,
+                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width > maxWidth)
+                {
+                    int low = 1, high = cur.Length - 1;
+                    while (low < high)
+                    {
+                        int mid = low + (high - low + 1) / 2;
+                        if (TextRenderer.MeasureText(cur.Substring(0, mid), font,
+                            new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width <= maxWidth) low = mid;
+                        else high = mid - 1;
+                    }
+                    int split = low;
+                    lines.Add(cur.Substring(0, split));
+                    cur = cur.Substring(split);
                 }
             }
             if (cur.Length > 0) lines.Add(cur);

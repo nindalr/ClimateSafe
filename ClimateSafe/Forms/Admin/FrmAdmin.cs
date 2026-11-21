@@ -16,6 +16,7 @@ namespace ClimateSafe
         private BufferedPanel contentScroll;
         private Control? currentPage;
         private AdminPenggunaPage? penggunaPage;
+        private AdminKontenPage? kontenPage;
         private int activeIndex = -1;
         private bool built;
 
@@ -103,11 +104,18 @@ namespace ClimateSafe
         {
             if (!built) return;
 
+            if (index != activeIndex && kontenPage != null && !kontenPage.ConfirmDiscard()) return;
+
             SetActiveMenu(index);
 
             if (index == 0 && penggunaPage != null && currentPage == penggunaPage)
             {
                 penggunaPage.ReloadData();
+                LayoutPage();
+                return;
+            }
+            if (index == 1 && kontenPage != null && currentPage == kontenPage)
+            {
                 LayoutPage();
                 return;
             }
@@ -121,6 +129,7 @@ namespace ClimateSafe
                     currentPage.Dispose();
                     currentPage = null;
                     penggunaPage = null;
+                    kontenPage = null;
                 }
 
                 Control page;
@@ -128,6 +137,11 @@ namespace ClimateSafe
                 {
                     penggunaPage = new AdminPenggunaPage(this, admin);
                     page = penggunaPage;
+                }
+                else if (index == 1)
+                {
+                    kontenPage = new AdminKontenPage(this);
+                    page = kontenPage;
                 }
                 else
                 {
@@ -148,7 +162,13 @@ namespace ClimateSafe
             ActiveControl = null;
         }
 
-        // Sementara, sampai AdminKontenPage dan AdminLogPage dibuat di tahap berikutnya.
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (kontenPage != null && !kontenPage.ConfirmDiscard()) e.Cancel = true;
+            base.OnFormClosing(e);
+        }
+
+        // Halaman log masih dalam tahap perencanaan.
         private Control BuildPlaceholderPage(int index)
         {
             string title = index == 1 ? "Kelola Konten" : "Log & Monitoring";

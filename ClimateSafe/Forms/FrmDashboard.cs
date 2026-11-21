@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -904,8 +904,7 @@ namespace ClimateSafe
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Data asesmen belum dapat dimuat.\nDetail teknis: " +
-                    TechnicalDetail(ex),
+                MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi API.",
                     "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             finally { dashPage.ResumeLayout(true); }
@@ -1113,15 +1112,6 @@ namespace ClimateSafe
                 return TextRenderer.MeasureText(text, f,
                     new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
             }
-        }
-
-
-        // Detail teknis error database (tanpa connection string atau kredensial).
-        private static string TechnicalDetail(Exception ex)
-        {
-            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
-            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
-            return ex.Message;
         }
 
         private RoundButton MakeButton(Control parent, string text, int x, int y, int w, int h,

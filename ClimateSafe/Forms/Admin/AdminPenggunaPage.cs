@@ -349,7 +349,11 @@ namespace ClimateSafe
                 AdminUi.DangerInk);
             remove.Click += delegate (object? s, EventArgs e) { DeleteUser(item); };
 
-            int bottom = buttonsTop + AdminUi.ButtonH;
+            PillButton reset = AdminUi.MakeButton(card, "Reset Password", 24, buttonsTop + AdminUi.ButtonH + 12,
+                AdminUi.ButtonH, Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 44);
+            reset.Click += delegate (object? s, EventArgs e) { ResetPassword(item); };
+
+            int bottom = reset.Bottom;
             if (self)
             {
                 AdminUi.AddText(card, "Tidak bisa menonaktifkan atau menghapus akun sendiri.",
@@ -444,7 +448,8 @@ namespace ClimateSafe
 
             try
             {
-                service.UpdateName(admin, item.Id, value);
+                if (!service.UpdateName(admin, item.Id, value))
+                    throw new InvalidOperationException("Akun tidak ditemukan. Muat ulang daftar pengguna.");
             }
             catch (Exception ex)
             {
@@ -472,7 +477,8 @@ namespace ClimateSafe
 
             try
             {
-                service.ToggleStatus(admin, item.Id);
+                if (service.ToggleStatus(admin, item.Id) == null)
+                    throw new InvalidOperationException("Akun tidak ditemukan. Muat ulang daftar pengguna.");
             }
             catch (Exception ex)
             {
@@ -502,7 +508,8 @@ namespace ClimateSafe
 
             try
             {
-                service.DeleteUser(admin, item.Id);
+                if (!service.DeleteUser(admin, item.Id))
+                    throw new InvalidOperationException("Akun tidak ditemukan. Muat ulang daftar pengguna.");
             }
             catch (Exception ex)
             {
@@ -515,6 +522,56 @@ namespace ClimateSafe
             selectedId = nextId;
             banner = "Akun dihapus";
             ReloadData();
+        }
+
+        private void ResetPassword(UserItem item)
+        {
+            using var dialog = new Form
+            {
+                Text = "Reset Password", StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(420, 190), FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false, MinimizeBox = false
+            };
+            var instruction = new Label { Text = "Password baru untuk pengguna #" + item.Id,
+                Location = new Point(20, 18), AutoSize = true };
+            var passwordLabel = new Label { Text = "Password baru", Location = new Point(20, 55), AutoSize = true };
+            var password = new TextBox { Location = new Point(170, 52), Width = 225, UseSystemPasswordChar = true };
+            var confirmLabel = new Label { Text = "Ulangi password", Location = new Point(20, 95), AutoSize = true };
+            var confirm = new TextBox { Location = new Point(170, 92), Width = 225, UseSystemPasswordChar = true };
+            var save = new Button { Text = "Simpan", Location = new Point(215, 135), Width = 85 };
+            var cancel = new Button { Text = "Batal", Location = new Point(310, 135), Width = 85, DialogResult = DialogResult.Cancel };
+            save.Click += (_, _) =>
+            {
+                if (password.Text != confirm.Text)
+                {
+                    MessageBox.Show(dialog, "Konfirmasi password tidak cocok.", "Reset Password");
+                    return;
+                }
+                try
+                {
+                    if (!service.ResetPassword(admin, item.Id, password.Text))
+                    {
+                        MessageBox.Show(dialog, "Akun tidak ditemukan. Muat ulang daftar pengguna.", "Reset Password");
+                        return;
+                    }
+                    password.Clear();
+                    confirm.Clear();
+                    dialog.DialogResult = DialogResult.OK;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(dialog, ex.Message, "Reset Password", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
+            dialog.Controls.AddRange(new Control[] { instruction, passwordLabel, password, confirmLabel, confirm, save, cancel });
+            dialog.AcceptButton = save;
+            dialog.CancelButton = cancel;
+            if (dialog.ShowDialog(owner) == DialogResult.OK)
+            {
+                bool self = item.Id == admin.UserId;
+                MessageBox.Show(owner, self ? "Password berhasil direset. Silakan login kembali." : "Password berhasil direset.", "Reset Password");
+                if (self) owner.Close();
+            }
         }
 
         // Baris terdekat setelah penghapusan: berikutnya bila ada, kalau tidak sebelumnya.

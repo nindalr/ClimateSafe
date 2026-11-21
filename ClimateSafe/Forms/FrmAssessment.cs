@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -116,42 +116,15 @@ namespace ClimateSafe
         };
         internal static readonly string[] dimGlyph = { "\u2692", "\u27A4", "\u260E", "\u2630", "\u2139" };
 
-        private readonly string[] questionText =
-        {
-            "Apakah kamu sudah menyiapkan perlengkapan darurat untuk menghadapi {0}?",
-            "Apakah kamu tahu jalur evakuasi terdekat saat terjadi {0}?",
-            "Apakah kamu punya daftar kontak darurat untuk situasi {0}?",
-            "Apakah keluargamu punya rencana logistik menghadapi {0}?",
-            "Seberapa paham kamu langkah penyelamatan saat {0}?"
-        };
-
-        private readonly string[] questionDesc =
-        {
-            "Termasuk tas siaga bencana (grab bag) berisi dokumen penting, senter, air minum, dan obat darurat.",
-            "Termasuk titik kumpul terdekat, jalur aman, dan rute alternatif dari rumah maupun tempat kerja.",
-            "Meliputi keluarga, tetangga, RT/RW, BPBD, puskesmas, dan layanan darurat setempat.",
-            "Termasuk air bersih, makanan tahan lama, obat rutin, dan kebutuhan khusus untuk minimal 3x24 jam.",
-            "Misalnya membaca peringatan dini BMKG, mengenali tanda bahaya, dan tahu apa yang harus dilakukan."
-        };
-
-        private readonly string[][] answerText =
-        {
-            new string[] { "Sudah lengkap dan mudah dijangkau", "Sudah ada, tetapi belum lengkap",
-                           "Baru menyiapkan beberapa barang", "Belum menyiapkan sama sekali" },
-            new string[] { "Hafal jalur dan titik kumpul, sudah pernah berlatih", "Tahu jalurnya, tetapi belum pernah berlatih",
-                           "Hanya tahu sebagian jalur", "Belum tahu sama sekali" },
-            new string[] { "Lengkap, tersimpan di ponsel dan dicetak", "Ada, tetapi hanya tersimpan di ponsel",
-                           "Hanya memiliki beberapa nomor", "Belum punya sama sekali" },
-            new string[] { "Sudah ada untuk 3x24 jam atau lebih", "Ada, tetapi kurang dari 3x24 jam",
-                           "Baru menyiapkan sebagian kecil", "Belum ada sama sekali" },
-            new string[] { "Sangat paham dan pernah berlatih", "Paham dasar-dasarnya",
-                           "Pernah mendengar, tetapi belum paham", "Belum paham sama sekali" }
-        };
+        private readonly string[] questionText = new string[5];
+        private readonly string[] questionDesc = new string[5];
+        private readonly string[][] answerText = Enumerable.Range(0, 5)
+            .Select(_ => new string[4]).ToArray();
 
         private int hazardIdx = 0;
         private int currentQ = 0;
         private readonly int[] answers = { -1, -1, -1, -1, -1 };
-        private readonly AssessmentScoringService scoringService = new AssessmentScoringService();
+        private List<ApiQuestion>? catalog;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
 
@@ -686,8 +659,32 @@ namespace ClimateSafe
 
         private void SelectHazard(int index)
         {
-            if (hazardIdx != index) ResetAnswers();
+            List<ApiQuestion> loaded;
+            try
+            {
+                loaded = ApiClient.Get<List<ApiQuestion>>($"api/hazards/{index + 1}/questions")
+                    ?? throw new InvalidOperationException("Katalog pertanyaan tidak tersedia.");
+                if (loaded.Count != 5 || loaded.Any(q => q.Options.Count != 4))
+                    throw new InvalidOperationException("Katalog harus memiliki lima pertanyaan dengan empat pilihan.");
+            }
+            catch (Exception ex)
+            {
+                if (catalog == null) Info("Pertanyaan belum dapat dimuat. " + ex.Message);
+                else Info("Jenis bahaya belum dapat diubah. " + ex.Message);
+                return;
+            }
+            if (hazardIdx != index || (catalog != null &&
+                !catalog.SelectMany(q => q.Options).Select(o => o.Id)
+                    .SequenceEqual(loaded.SelectMany(q => q.Options).Select(o => o.Id)))) ResetAnswers();
             hazardIdx = index;
+            catalog = loaded;
+            for (int i = 0; i < loaded.Count; i++)
+            {
+                questionText[i] = loaded[i].Text;
+                questionDesc[i] = loaded[i].Description ?? "";
+                dimUpper[i] = loaded[i].DimensionName.ToUpperInvariant();
+                for (int j = 0; j < loaded[i].Options.Count; j++) answerText[i][j] = loaded[i].Options[j].Text;
+            }
             for (int k = 0; k < 3; k++)
             {
                 bool sel = (k == index);
@@ -777,19 +774,19 @@ namespace ClimateSafe
             counterBar.Value = (q + 1) / 5f;
             counterBar.Invalidate();
 
-            string title = string.Format(questionText[q], hazardLower[hazardIdx]);
+            string title = catalog == null ? "Pertanyaan belum tersedia." : questionText[q];
             List<string> tl = WrapLines(title, titleFont, 570);
             SetLines(titleLines, tl, 71, 30);
 
             int n = Math.Min(tl.Count, 3);
             int descTop = 71 + 30 * n + 8;
-            List<string> dl = WrapLines(questionDesc[q], descFont, 590);
+            List<string> dl = WrapLines(catalog == null ? "Periksa koneksi API dan pilih kembali jenis bahaya." : questionDesc[q], descFont, 590);
             SetLines(descLines, dl, descTop, 23);
 
             for (int i = 0; i < 4; i++)
             {
                 bool sel = (answers[q] == i);
-                answerLabels[i].Text = answerText[q][i];
+                answerLabels[i].Text = catalog == null ? "" : answerText[q][i];
                 answerRows[i].Fill = sel ? coralBg : Color.White;
                 answerRows[i].BorderColor = sel ? coral : line2;
                 answerRows[i].Invalidate();
@@ -862,6 +859,11 @@ namespace ClimateSafe
 
         private void GoNext()
         {
+            if (catalog == null)
+            {
+                Info("Pertanyaan belum tersedia. Periksa koneksi API dan pilih kembali jenis bahaya.");
+                return;
+            }
             if (answers[currentQ] < 0)
             {
                 Info("Pilih satu jawaban terlebih dahulu.");
@@ -884,78 +886,42 @@ namespace ClimateSafe
 
             try
             {
-                var hazard = new Hazard(hazardIdx + 1, hazardNames[hazardIdx]);
-                for (int i = 0; i < questionText.Length; i++)
-                {
-                    hazard.AddQuestion(new Question(i + 1,
-                        string.Format(questionText[i], hazardLower[hazardIdx])));
-                }
-
-                Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
-                var recommendationRepository = new RecommendationRepository();
-                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(
-                    assessment, dimNames, recommendationRepository.GetDimensionThresholds());
-                var recommendationService = new RecommendationService();
-                IReadOnlyList<Recommendation> recommendations =
-                    recommendationService.GenerateRecommendations(hazard, gaps);
                 if (Session.CurrentUser == null)
-                    throw new InvalidOperationException("Silakan login untuk menyimpan asesmen dan checklist.");
-                var checklistService = new ChecklistService();
-                int assessmentId = checklistService.SaveAssessment(Session.CurrentUser.UserId,
-                    submissionKey, hazard, assessment, recommendations);
+                    throw new InvalidOperationException("Silakan login untuk menyimpan asesmen.");
 
-                // Kegagalan setelah asesmen tersimpan ditangani terpisah supaya pesan
-                // "belum tersimpan" tidak muncul untuk data yang sudah masuk.
+                int[] optionIds = catalog.Select((question, index) => question.Options[answers[index]].Id).ToArray();
+                var result = ApiClient.Post<ApiSubmission>("api/assessments",
+                    new { submissionKey, hazardId = hazardIdx + 1, optionIds })
+                    ?? throw new InvalidOperationException("Respons asesmen tidak tersedia.");
+
                 try
                 {
-                    IReadOnlyList<DimensionScore> dimensionScores =
-                        recommendationRepository.GetDimensionScores(
-                            Session.CurrentUser.UserId, assessmentId);
-
-                    var hasil = new HasilAsesmenData();
-                    hasil.HazardName = hazard.Name;
-                    hasil.HazardId = hazard.HazardId;
-                    hasil.OverallScore = assessment.OverallScore;
-                    hasil.Level = assessment.Level;
-                    hasil.AssessmentDate = assessment.AssessmentDate;
-                    hasil.GapCount = gaps.Count;
-                    hasil.Dimensions = dimensionScores;
-                    hasil.Recommendations = recommendations;
-
+                    var detail = RecommendationRepository.GetDetail(result.AssessmentId);
+                    var hasil = new HasilAsesmenData
+                    {
+                        HazardName = detail.Assessment.HazardName,
+                        HazardId = detail.Assessment.HazardId,
+                        OverallScore = detail.Assessment.OverallScore,
+                        Level = detail.Assessment.Level,
+                        AssessmentDate = detail.Assessment.CreatedAt,
+                        GapCount = detail.Dimensions.Count(d => d.Score < d.PassingThreshold),
+                        Dimensions = detail.Dimensions.Select(d => new DimensionScore(detail.Assessment.HazardId,
+                            d.DimensionId, d.DimensionName, d.Score, d.PassingThreshold)).ToList(),
+                        Recommendations = detail.Recommendations.Select(r =>
+                            new Recommendation(r.RecommendationId, r.Description, r.Priority)).ToList()
+                    };
                     Nav.ShowHasil(this, hasil);
                 }
-                catch (Npgsql.NpgsqlException ex)
-                {
-                    Info("Asesmen tersimpan, tetapi hasil belum dapat ditampilkan. " + ex.Message);
-                    Nav.ShowDashboard(this);
-                }
-                catch (InvalidOperationException ex)
+                catch (Exception ex)
                 {
                     Info("Asesmen tersimpan, tetapi hasil belum dapat ditampilkan. " + ex.Message);
                     Nav.ShowDashboard(this);
                 }
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                Info(ex.Message);
+                Info("Asesmen belum dapat dikirim. Coba lagi dengan jawaban yang sama. " + ex.Message);
             }
-            catch (InvalidOperationException ex)
-            {
-                Info(ex.Message);
-            }
-            catch (Npgsql.NpgsqlException ex)
-            {
-                Info("Asesmen belum tersimpan.\nDetail teknis: " + TechnicalDetail(ex));
-            }
-        }
-
-
-        // Detail teknis error database (tanpa connection string atau kredensial).
-        private static string TechnicalDetail(Exception ex)
-        {
-            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
-            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
-            return ex.Message;
         }
 
         private void BuildDimensions(Panel host)

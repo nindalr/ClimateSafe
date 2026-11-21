@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -81,7 +81,6 @@ namespace ClimateSafe
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
-        private readonly RecommendationService recommendationService = new RecommendationService();
         private readonly RecommendationRepository recommendationRepository = new RecommendationRepository();
 
         private BufferedPanel recScroll;
@@ -199,20 +198,11 @@ namespace ClimateSafe
                         scores = recommendationRepository.GetDimensionScores(
                             Session.CurrentUser.UserId, session.AssessmentId);
 
-                        List<DimensionGap> gaps = new List<DimensionGap>();
                         foreach (DimensionScore s in scores)
                         {
                             hazardId = s.HazardId;
-                            if (s.Score < s.PassingThreshold)
-                            {
-                                gaps.Add(new DimensionGap(s.DimensionId, s.DimensionName, s.Score));
-                            }
                         }
-                        if (gaps.Count > 0)
-                        {
-                            recommendations = recommendationService.GenerateRecommendations(
-                                new Hazard(hazardId, session.HazardName), gaps);
-                        }
+                        recommendations = recommendationRepository.GetRecommendations(session.AssessmentId);
                     }
                 }
 
@@ -220,8 +210,7 @@ namespace ClimateSafe
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat.\nDetail teknis: " +
-                    TechnicalDetail(ex),
+                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi API.",
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
                 {
@@ -593,15 +582,6 @@ namespace ClimateSafe
         private int ButtonWidth(string text)
         {
             return Measure(text, 9.5f, FontStyle.Bold) + 48;
-        }
-
-
-        // Detail teknis error database (tanpa connection string atau kredensial).
-        private static string TechnicalDetail(Exception ex)
-        {
-            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
-            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
-            return ex.Message;
         }
 
         private static int Measure(string text, float size, FontStyle style)

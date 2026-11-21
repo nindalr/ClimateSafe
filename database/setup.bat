@@ -34,6 +34,14 @@ if not exist "setup.sql" (
     exit /b 1
 )
 
+for %%F in (002_assessment_history.sql 003_account_sessions.sql 004_question_catalog.sql 005_assessment_submission.sql 006_education_contents.sql 007_multiple_education_contents.sql) do (
+    if not exist "..\ClimateSafe.Api\Data\Migrations\%%F" (
+        echo [GAGAL] Migrasi %%F tidak ditemukan di ClimateSafe.Api\Data\Migrations.
+        pause
+        exit /b 1
+    )
+)
+
 rem ---- Cari psql ----
 set "PSQL="
 where psql >nul 2>nul
@@ -85,6 +93,12 @@ if /i "%~1"=="reset" >> "%DRV%" echo DROP DATABASE IF EXISTS %DB_NAME% WITH (FOR
 >> "%DRV%" echo SELECT 'CREATE DATABASE %DB_NAME%' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '%DB_NAME%')\gexec
 >> "%DRV%" echo \connect %DB_NAME%
 >> "%DRV%" echo \i setup.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/002_assessment_history.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/003_account_sessions.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/004_question_catalog.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/005_assessment_submission.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/006_education_contents.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/007_multiple_education_contents.sql
 
 set "PGCLIENTENCODING=UTF8"
 echo Menjalankan setup. Ketik password PostgreSQL saat diminta
@@ -109,10 +123,9 @@ echo ==================================================
 echo  [BERHASIL] Database %DB_NAME% siap dipakai.
 echo ==================================================
 echo  Langkah berikutnya:
-echo   1. Salin .env.example menjadi .env di root repository.
-echo   2. Isi CLIMATESAFE_DB_HOST, _PORT, _USERNAME, _NAME, dan _PASSWORD
-echo      (nilai harus sama dengan pengaturan di atas; password pakai kutip tunggal).
-echo   3. Build dan jalankan aplikasi.
+echo   1. Atur connection string PostgreSQL untuk ClimateSafe API.
+echo   2. Jalankan API, lalu jalankan aplikasi desktop.
+echo   3. Lihat ClimateSafe.Api\README.md untuk petunjuk lengkap.
 echo.
 pause
 endlocal

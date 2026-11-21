@@ -266,12 +266,9 @@ namespace ClimateSafe
             }
         }
 
-        // Detail teknis error database (tanpa connection string atau kredensial).
-        // Pola sama dengan TechnicalDetail di form sisi pengguna.
+        // Tampilkan pesan kegagalan yang disediakan client API.
         public static string TechnicalDetail(Exception ex)
         {
-            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
-            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
             return ex.Message;
         }
 
