@@ -1,62 +1,30 @@
-using System;
 using System.Data;
+using System.Net;
 
-namespace ClimateSafe.Auth
+namespace ClimateSafe.Auth;
+
+internal sealed class AdminService
 {
-    internal sealed class AdminService
+    public DataTable GetUsers(UserAccount actor)
     {
-        private readonly AdminRepository repository;
-
-        public AdminService(AdminRepository? repository = null)
-        {
-            this.repository = repository ?? new AdminRepository();
-        }
-
-        private static int Authorize(UserAccount? actor)
-        {
-            if (actor is not Admin || actor.UserId <= 0 || actor.Role != "Admin" || actor.Status != "Active")
-                throw new UnauthorizedAccessException("Hanya admin aktif yang dapat mengelola akun.");
-            return actor.UserId;
-        }
-
-        private static void ValidateTarget(int userId)
-        {
-            if (userId <= 0) throw new ArgumentOutOfRangeException(nameof(userId));
-        }
-
-        public DataTable GetUsers(UserAccount actor) => repository.GetUsers(Authorize(actor));
-
-        public bool UpdateName(UserAccount actor, int userId, string name)
-        {
-            int adminId = Authorize(actor);
-            ValidateTarget(userId);
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Nama tidak boleh kosong.", nameof(name));
-            return repository.UpdateName(adminId, userId, name.Trim());
-        }
-
-        public string? ToggleStatus(UserAccount actor, int userId)
-        {
-            int adminId = Authorize(actor);
-            ValidateTarget(userId);
-            if (adminId == userId) throw new InvalidOperationException("Tidak dapat mengubah status akun sendiri.");
-            return repository.ToggleStatus(adminId, userId);
-        }
-
-        public bool DeleteUser(UserAccount actor, int userId)
-        {
-            int adminId = Authorize(actor);
-            ValidateTarget(userId);
-            if (adminId == userId) throw new InvalidOperationException("Tidak dapat menghapus akun sendiri.");
-            return repository.DeleteUser(adminId, userId);
-        }
-
-        public bool ResetPassword(UserAccount actor, int userId, string password)
-        {
-            int adminId = Authorize(actor);
-            ValidateTarget(userId);
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
-                throw new ArgumentException("Password minimal 6 karakter dan tidak boleh kosong.", nameof(password));
-            return repository.ResetPassword(adminId, userId, PasswordHasher.Hash(password));
-        }
+        var users = ApiClient.Get<List<ApiAccount>>("api/admin/users") ?? new();
+        var table = new DataTable();
+        table.Columns.Add("user_id", typeof(int)); table.Columns.Add("name", typeof(string));
+        table.Columns.Add("email", typeof(string)); table.Columns.Add("role", typeof(string));
+        table.Columns.Add("status", typeof(string)); table.Columns.Add("created_at", typeof(DateTime));
+        foreach (var user in users) table.Rows.Add(user.Id, user.Name, user.Email, user.Role, user.Status, user.CreatedAt);
+        return table;
+    }
+    public bool UpdateName(UserAccount actor, int id, string name) => Change(() => ApiClient.Patch<object>($"api/admin/users/{id}/name", new { name }));
+    public bool DeleteUser(UserAccount actor, int id) => Change(() => ApiClient.Delete<object>($"api/admin/users/{id}"));
+    public bool ResetPassword(UserAccount actor, int id, string password) => Change(() => ApiClient.Put<object>($"api/admin/users/{id}/password", new { password }));
+    public string? ToggleStatus(UserAccount actor, int id)
+    {
+        return Change(() => ApiClient.Post<object>($"api/admin/users/{id}/toggle-status")) ? "diperbarui" : null;
+    }
+    private static bool Change(Func<object?> action)
+    {
+        try { action(); return true; }
+        catch (ApiException ex) when (ex.Status == HttpStatusCode.NotFound) { return false; }
     }
 }

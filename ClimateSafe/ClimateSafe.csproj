@@ -12,14 +12,4 @@
     <NoWarn>$(NoWarn);WFO1000;CS8618;CS8622;CS8600;CS8601;CS8602;CS8603;CS8604;CS8625</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DotNetEnv" Version="3.2.0" />
-    <PackageReference Include="Npgsql" Version="10.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="../.env" Link=".env" Condition="Exists('../.env')"
-          CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />
-  </ItemGroup>
-
 </Project>

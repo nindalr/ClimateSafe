@@ -81,7 +81,6 @@ namespace ClimateSafe
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
-        private readonly RecommendationService recommendationService = new RecommendationService();
         private readonly RecommendationRepository recommendationRepository = new RecommendationRepository();
 
         private BufferedPanel recScroll;
@@ -199,20 +198,11 @@ namespace ClimateSafe
                         scores = recommendationRepository.GetDimensionScores(
                             Session.CurrentUser.UserId, session.AssessmentId);
 
-                        List<DimensionGap> gaps = new List<DimensionGap>();
                         foreach (DimensionScore s in scores)
                         {
                             hazardId = s.HazardId;
-                            if (s.Score < s.PassingThreshold)
-                            {
-                                gaps.Add(new DimensionGap(s.DimensionId, s.DimensionName, s.Score));
-                            }
                         }
-                        if (gaps.Count > 0)
-                        {
-                            recommendations = recommendationService.GenerateRecommendations(
-                                new Hazard(hazardId, session.HazardName), gaps);
-                        }
+                        recommendations = recommendationRepository.GetRecommendations(session.AssessmentId);
                     }
                 }
 
@@ -220,7 +210,7 @@ namespace ClimateSafe
             }
             catch (Exception)
             {
-                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi API.",
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
                 {

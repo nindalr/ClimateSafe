@@ -1,76 +1,10 @@
-﻿using System;
-using Npgsql;
-using System.Data;
+namespace ClimateSafe.Auth;
 
-namespace ClimateSafe.Auth
+public class UserRepository
 {
-    public class UserRepository
+    public bool UpdateName(int userId, string name)
     {
-        public bool Register(string name, string email, string passwordHash)
-        {
-            using (NpgsqlConnection conn = Database.Create())
-            {
-                conn.Open();
-                using (NpgsqlCommand cmd = new NpgsqlCommand(
-                    "select * from st_register(@name, @email, @hash)", conn))
-                {
-                    cmd.Parameters.AddWithValue("name", name);
-                    cmd.Parameters.AddWithValue("email", email);
-                    cmd.Parameters.AddWithValue("hash", passwordHash);
-                    object? result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result) == 1;
-                }
-            }
-        }
-
-        public UserAccount? GetByEmail(string email)
-        {
-            using (NpgsqlConnection conn = Database.Create())
-            {
-                conn.Open();
-                using (NpgsqlCommand cmd = new NpgsqlCommand(
-                    "select * from st_get_user(@email)", conn))
-                {
-                    cmd.Parameters.AddWithValue("email", email);
-                    using (NpgsqlDataReader rd = cmd.ExecuteReader())
-                    {
-                        if (!rd.Read()) return null;
-
-                        int id = rd.GetInt32(0);
-                        string name = rd.GetString(1);
-                        string mail = rd.GetString(2);
-                        string hash = rd.GetString(3);
-                        string role = rd.GetString(4);
-                        string status = rd.GetString(5);
-                        DateTime created = rd.GetDateTime(6);
-
-                        if (role == "Admin")
-                            return new Admin(id, name, mail, hash, role, status, created);
-                        return new User(id, name, mail, hash, role, status, created);
-                    }
-                }
-            }
-        }
-
-        public bool UpdateName(int userId, string name)
-        {
-            return ExecuteInt("select * from st_update_profile(@id, @name)",
-                ("id", userId), ("name", name));
-        }
-
-        private bool ExecuteInt(string sql, params (string, object)[] parameters)
-        {
-            using (NpgsqlConnection conn = Database.Create())
-            {
-                conn.Open();
-                using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))
-                {
-                    foreach (var p in parameters)
-                        cmd.Parameters.AddWithValue(p.Item1, p.Item2);
-                    object? result = cmd.ExecuteScalar();
-                    return Convert.ToInt32(result) == 1;
-                }
-            }
-        }
+        ApiClient.Patch<ApiAccount>("api/account/me", new { name });
+        return true;
     }
 }

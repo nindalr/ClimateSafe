@@ -56,6 +56,9 @@ namespace ClimateSafe
 
         public virtual void Logout()
         {
+            try { if (ApiClient.Token != null) ApiClient.Post<object>("api/account/logout"); }
+            catch (Exception) { }
+            finally { ApiClient.Token = null; Session.CurrentUser = null; }
         }
 
         // POLYMORPHISM
