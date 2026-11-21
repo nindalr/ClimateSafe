@@ -555,8 +555,6 @@ namespace ClimateSafe
         private const int HeadRows = 88;     // header kartu 52 + judul kolom 36
         private const string AllFilter = "Semua";
         private const string NotReadyLevel = "Belum Siap";
-        private const double PassingTarget = 75;
-        private const double HighPriorityBelow = 40;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService;
@@ -1086,8 +1084,8 @@ namespace ClimateSafe
                     TargetBar bar = new TargetBar();
                     bar.Bounds = new Rectangle(224, y + 3, 360, 14);
                     bar.Value = (float)(s.Score / 100.0);
-                    bar.Target = (float)(PassingTarget / 100.0);
-                    bar.BarColor = s.Score < HighPriorityBelow ? barHigh : navy;
+                    bar.Target = (float)(s.PassingThreshold / 100.0);
+                    bar.BarColor = s.Score < AssessmentRules.HighPriorityBelow ? barHigh : navy;
                     bar.TrackColor = barTrack;
                     bar.TargetColor = ink;
                     panel.Controls.Add(bar);
@@ -1104,7 +1102,7 @@ namespace ClimateSafe
 
             if (scores.Count > 0)
             {
-                AddAligned(panel, "Garis hitam menandai target 75.", 24, y, 320, 40, 9f, false, muted,
+                AddAligned(panel, "Garis hitam menandai target tiap dimensi saat ini.", 24, y, 320, 40, 9f, false, muted,
                     ContentAlignment.MiddleLeft);
             }
 
