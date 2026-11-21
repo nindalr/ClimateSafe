@@ -18,6 +18,8 @@ psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migra
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/003_account_sessions.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/004_question_catalog.sql
 psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/005_assessment_submission.sql
+psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/006_education_contents.sql
+psql -U postgres -d climatesafe -v ON_ERROR_STOP=1 -f ClimateSafe.Api/Data/Migrations/007_multiple_education_contents.sql
 ```
 
 Skrip ini tidak dijalankan secara otomatis saat API dimulai. `000_users.sql`
@@ -30,6 +32,7 @@ ID baru mengikuti format `hazard_id * 100 + dimension_id`; jika ID tersebut suda
 dipakai oleh kombinasi lain, migrasi gagal dan transaksi dibatalkan untuk ditinjau.
 Migrasi 005 menambahkan katalog rekomendasi awal dan penyimpanan ID pilihan untuk
 mendeteksi pengiriman ulang. Rekomendasi yang sudah ada di katalog tidak ditimpa.
+Migrasi 006 menyiapkan konten edukasi dan 007 memungkinkan beberapa materi per hazard tanpa menghapus materi yang sudah ada. Materi awal tidak diisi secara otomatis.
 
 Gunakan `ClimateSafe.Api.http` untuk memanggil `GET /health` dan `GET /api/hazards`.
 Endpoint health menunjukkan bahwa proses API berjalan, sedangkan endpoint hazards
@@ -67,3 +70,21 @@ Gunakan kunci yang sama jika mengulang pengiriman jawaban yang sama; jika jawaba
 atau hazard berbeda, gunakan kunci baru. Pengiriman ulang mengembalikan asesmen yang
 sudah disimpan. Kunci asesmen lama yang tidak memiliki catatan ID pilihan tidak
 dapat digunakan untuk pengiriman ulang melalui endpoint ini.
+
+## Konten edukasi
+
+- `GET /api/education/hazards/{hazardId}` menyediakan daftar materi yang terpublikasi; daftar kosong dikembalikan jika belum ada.
+- `GET /api/admin/education?hazardId={hazardId}` dan `GET /api/admin/education/{contentId}` membaca
+  daftar atau detail draft beserta salinan yang sedang terpublikasi.
+- `POST /api/admin/education` membuat draft dengan `hazardId`, `title`, `body`, `sourceName`, dan `sourceUrl`.
+- `PUT /api/admin/education/{contentId}` memperbarui draft dengan `title`, `body`,
+  `sourceName`, dan `sourceUrl`. Judul dan isi wajib diisi. Tautan sumber opsional
+  harus menggunakan HTTP atau HTTPS.
+- `POST /api/admin/education/{contentId}/publish` mempublikasikan draft terkini.
+- `POST /api/admin/education/{contentId}/unpublish` menarik publikasi, tetapi tetap
+  menyimpan draft untuk disunting atau dipublikasikan kembali.
+
+Semua endpoint admin membutuhkan token admin aktif. Setiap hazard dapat memiliki
+beberapa materi. Menyimpan draft tidak mengubah salinan yang sudah
+terpublikasi sampai admin mempublikasikannya kembali. `updatedBy` mencatat admin
+terakhir dan menjadi null jika akun admin tersebut dihapus.
