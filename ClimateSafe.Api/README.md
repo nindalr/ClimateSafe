@@ -34,3 +34,15 @@ header `Authorization: Bearer <token>` untuk endpoint yang memerlukan login.
 Pendaftaran selalu membuat akun berperan User. Akun Admin harus disiapkan oleh
 pengelola database; endpoint admin tersedia di `/api/admin/users`.
 Gunakan HTTPS saat mengirim password dan token melalui jaringan.
+
+Riwayat dan checklist memerlukan token login yang sama:
+
+- `GET /api/assessments` menampilkan daftar asesmen dan jumlah checklist.
+- `GET /api/assessments/{id}` menampilkan hasil, jawaban, skor per dimensi, dan checklist.
+- `GET /api/assessments/{id}/checklist` menampilkan checklist satu asesmen.
+- `PATCH /api/checklist/{id}` mengubah status dengan body `{ "isCompleted": true }`
+  atau `{ "isCompleted": false }`.
+
+Data hanya tersedia untuk pemilik asesmen. Target dimensi pada riwayat mengikuti
+nilai database saat ini. Skor per dimensi dihitung dengan skor maksimum jawaban 3,
+sesuai aturan aplikasi desktop saat ini.
