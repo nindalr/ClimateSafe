@@ -158,9 +158,7 @@ namespace ClimateSafe
 
         private static string DetermineLevel(double score)
         {
-            if (score >= 80) return "Siap";
-            if (score >= 40) return "Cukup Siap";
-            return "Belum Siap";
+            return ScoringRules.GetLevel(score);
         }
     }
 }

@@ -14,7 +14,8 @@ namespace ClimateSafe
         private readonly List<Question> _questions;
         private readonly List<Recommendation> _recommendations;
 
-        public PreparednessDimension(int dimensionId, string name, double passingThreshold = 75.0)
+        public PreparednessDimension(int dimensionId, string name,
+            double passingThreshold = ScoringRules.DimensionTarget)
         {
             if (!double.IsFinite(passingThreshold) || passingThreshold <= 0 || passingThreshold > 100)
             {

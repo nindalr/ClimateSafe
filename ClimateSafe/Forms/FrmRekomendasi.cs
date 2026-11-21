@@ -78,10 +78,9 @@ namespace ClimateSafe
         private const int PageMinW = 960;
         private const int ContentTop = 104;
 
-        // Batas lulus bawaan PreparednessDimension.
-        private const double PassingTarget = 75;
-        // Ambang prioritas tinggi pada HazardRecommendationProvider.
-        private const double HighPriorityBelow = 40;
+        // Aturan skor berasal dari ScoringRules.
+        private const double PassingTarget = ScoringRules.DimensionTarget;
+        private const double HighPriorityBelow = ScoringRules.HighPriorityBelow;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
@@ -222,9 +221,10 @@ namespace ClimateSafe
 
                 RebuildContent(session, scores, recommendations, hazardId);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat.\nDetail teknis: " +
+                    TechnicalDetail(ex),
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
                 {
@@ -413,7 +413,7 @@ namespace ClimateSafe
             Stretch(card, host, 0, 0);
 
             AddText(card, "Tindakan yang disarankan", 24, 17, 320, 24, 12f, true, ink);
-            string hint = "Skor dimensi · garis tegak = target " + PassingTarget.ToString("0");
+            string hint = "Skor dimensi · garis tegak = target " + ScoringRules.TargetText;
             int hintW = Measure(hint, 8.5f, FontStyle.Regular) + 8;
             Label hintLabel = AddAligned(card, hint, w - 24 - hintW, 18, hintW, 20, 8.5f, false, muted,
                 ContentAlignment.MiddleRight);
@@ -446,9 +446,9 @@ namespace ClimateSafe
 
             string pillText = isHigh ? "Prioritas Tinggi" : "Prioritas Sedang";
             string rangeText = isHigh
-                ? "· skor di bawah " + HighPriorityBelow.ToString("0")
-                : "· skor " + HighPriorityBelow.ToString("0") +
-                  " sampai di bawah " + PassingTarget.ToString("0");
+                ? "· skor di bawah " + ScoringRules.HighPriorityBelowText
+                : "· skor " + ScoringRules.HighPriorityBelowText +
+                  " sampai di bawah " + ScoringRules.TargetText;
 
             int pillW = Measure(pillText, 8f, FontStyle.Bold) + 24;
             RoundPanel pill = Card(band, 24, 8, pillW, 24, 12,
@@ -596,6 +596,15 @@ namespace ClimateSafe
         private int ButtonWidth(string text)
         {
             return Measure(text, 9.5f, FontStyle.Bold) + 48;
+        }
+
+
+        // Detail teknis error database (tanpa connection string atau kredensial).
+        private static string TechnicalDetail(Exception ex)
+        {
+            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
+            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
+            return ex.Message;
         }
 
         private static int Measure(string text, float size, FontStyle style)

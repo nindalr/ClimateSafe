@@ -554,9 +554,10 @@ namespace ClimateSafe
         private const int CardTop = 56;
         private const int HeadRows = 88;     // header kartu 52 + judul kolom 36
         private const string AllFilter = "Semua";
-        private const string NotReadyLevel = "Belum Siap";
-        private const double PassingTarget = 75;
-        private const double HighPriorityBelow = 40;
+        // Aturan skor berasal dari ScoringRules.
+        private const string NotReadyLevel = ScoringRules.NotReadyLevel;
+        private const double PassingTarget = ScoringRules.DimensionTarget;
+        private const double HighPriorityBelow = ScoringRules.HighPriorityBelow;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService checklistService = new ChecklistService();
