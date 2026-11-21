@@ -339,7 +339,7 @@ namespace ClimateSafe
                 AddAligned(opt, FrmAssessment.hazardNames[k], 17, 65, 300, 22, 10f, true, ink,
                     ContentAlignment.MiddleLeft);
 
-                List<string> dl = WrapLines(FrmAssessment.hazardDesc[k], descFont, 266);
+                List<string> dl = HazardSummaryLines(FrmAssessment.hazardNames[k], descFont, 266);
                 for (int j = 0; j < dl.Count; j++)
                 {
                     AddAligned(opt, dl[j], 17, 91 + j * 21, 310, 20, 9f, false, muted,
@@ -451,7 +451,9 @@ namespace ClimateSafe
             hintLabel = AddAligned(card, "", 24, 0, PageMaxW - 48 - 200, 72, 9f, false, muted,
                 ContentAlignment.MiddleLeft);
 
-            int buttonW = Measure("Lanjutkan  →", 10f, FontStyle.Bold) + 48;
+            // Lebar tombol: teks diukur seperti kontrol menggambar + padding 24 kiri dan kanan.
+            int buttonW = Math.Max(160,
+                LabelWidth("Lanjutkan  →", 10f, FontStyle.Bold) + 48);
             PillButton next = new PillButton();
             next.Text = "Lanjutkan  →";
             next.Radius = 10;
@@ -462,7 +464,13 @@ namespace ClimateSafe
             next.Font = UI.Body(10f, FontStyle.Bold);
             next.Bounds = new Rectangle(PageMaxW - 24 - buttonW, 13, buttonW, 45);
             card.Controls.Add(next);
+            next.BringToFront();
             PinRight(next, card, 24);
+
+            // Label status dibatasi lebarnya (dan ikut menyusut saat jendela menyempit)
+            // supaya tidak pernah menutupi tombol yang berjangkar di kanan.
+            hintLabel.Width = Math.Max(120, card.Width - 24 - 24 - buttonW - 24);
+            Stretch(hintLabel, card, 24, 24 + buttonW + 24);
             next.Click += delegate (object sender, EventArgs e)
             {
                 Nav.ShowAssessmentQuestions(this, hazardIdx);
@@ -512,6 +520,62 @@ namespace ClimateSafe
         }
 
         // ---------- helper ----------
+
+        // Lebar teks seperti Label/PillButton menggambar (padding bawaan TextRenderer).
+        private static int LabelWidth(string text, Font font)
+        {
+            return TextRenderer.MeasureText(text, font).Width;
+        }
+
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style)) return LabelWidth(text, f);
+        }
+
+        // Deskripsi kartu bahaya: kalimat pertama paragraf pertama materi Edukasi, maksimal
+        // 2 baris, dipotong di batas kata. Aturan sama dengan kartu bahaya di Beranda; helper
+        // di FrmDashboard privat sehingga tidak bisa dipakai ulang dari sini.
+        private static List<string> HazardSummaryLines(string hazardName, Font font, int maxWidth)
+        {
+            string sentence = FirstSentence(EducationContent.GetSummary(hazardName));
+            if (sentence.Length == 0)
+            {
+                return new List<string> { "Belum ada materi" };
+            }
+
+            List<string> lines = WrapLines(sentence, font, maxWidth);
+            if (lines.Count <= 2) return lines;
+            return new List<string> { lines[0], Ellipsize(lines[1], font, maxWidth) };
+        }
+
+        private static string FirstSentence(string? summary)
+        {
+            if (string.IsNullOrWhiteSpace(summary)) return "";
+
+            string[] rawLines = summary.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            foreach (string raw in rawLines)
+            {
+                string paragraph = raw.Trim();
+                if (paragraph.Length == 0) continue;
+                if (paragraph.StartsWith("- ", StringComparison.Ordinal)) continue;
+
+                int stop = paragraph.IndexOf(". ", StringComparison.Ordinal);
+                return stop >= 0 ? paragraph.Substring(0, stop + 1) : paragraph;
+            }
+            return "";
+        }
+
+        private static string Ellipsize(string text, Font font, int maxWidth)
+        {
+            string value = text.TrimEnd();
+            while (value.Length > 0 && LabelWidth(value + "...", font) > maxWidth)
+            {
+                int space = value.LastIndexOf(' ');
+                if (space <= 0) break;
+                value = value.Substring(0, space).TrimEnd();
+            }
+            return value + "...";
+        }
 
         private static int Measure(string text, float size, FontStyle style)
         {
@@ -624,8 +688,7 @@ namespace ClimateSafe
             foreach (string word in words)
             {
                 string test = cur.Length == 0 ? word : cur + " " + word;
-                int tw = TextRenderer.MeasureText(test, font,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                int tw = LabelWidth(test, font);
                 if (tw > maxWidth && cur.Length > 0)
                 {
                     lines.Add(cur);
