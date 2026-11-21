@@ -52,7 +52,7 @@ namespace ClimateSafe
             using var connection = createConnection();
             connection.Open();
             using var command = new NpgsqlCommand("""
-                SELECT a.hazard_id, q.dimension_id, d.name, aa.score
+                SELECT a.hazard_id, q.dimension_id, COALESCE(aa.dimension_name, d.name), aa.score
                 FROM assessments a
                 JOIN assessment_answers aa ON aa.assessment_id = a.assessment_id
                 JOIN questions q ON q.question_id = aa.question_id

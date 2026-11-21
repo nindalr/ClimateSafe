@@ -97,8 +97,9 @@ namespace ClimateSafe
                     INSERT INTO questions(question_id, hazard_id, dimension_id, question_text)
                     VALUES (@question, @hazard, @dimension, @text)
                     ON CONFLICT (question_id) DO UPDATE SET question_text = EXCLUDED.question_text;
-                    INSERT INTO assessment_answers(assessment_id, question_id, value, score)
-                    VALUES (@assessment, @question, @value, @score)
+                    INSERT INTO assessment_answers(assessment_id, question_id, value, score, question_text, dimension_name)
+                    VALUES (@assessment, @question, @value, @score, @text,
+                        (SELECT name FROM preparedness_dimensions WHERE dimension_id = @dimension))
                     """, connection, transaction);
                 command.Parameters.AddWithValue("question", questionId);
                 command.Parameters.AddWithValue("hazard", hazard.HazardId);
