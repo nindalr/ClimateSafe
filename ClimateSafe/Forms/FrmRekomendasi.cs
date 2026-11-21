@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -208,7 +208,7 @@ namespace ClimateSafe
 
                 RebuildContent(session, scores, recommendations, hazardId);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi API.",
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
