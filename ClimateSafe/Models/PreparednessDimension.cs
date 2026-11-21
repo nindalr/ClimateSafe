@@ -8,13 +8,12 @@ namespace ClimateSafe
     {
         private int _dimensionId;
         private string _name;
-        private const int MaximumAnswerScore = 3;
         private readonly double _passingThreshold;
 
         private readonly List<Question> _questions;
         private readonly List<Recommendation> _recommendations;
 
-        public PreparednessDimension(int dimensionId, string name, double passingThreshold = 75.0)
+        public PreparednessDimension(int dimensionId, string name, double passingThreshold)
         {
             if (!double.IsFinite(passingThreshold) || passingThreshold <= 0 || passingThreshold > 100)
             {
@@ -59,7 +58,7 @@ namespace ClimateSafe
             }
 
             return (double)answers.Sum(answer => answer.CalculateScore()) /
-                (questionIds.Count * MaximumAnswerScore) * 100.0;
+                (questionIds.Count * AssessmentRules.MaximumAnswerScore) * 100.0;
         }
 
         public bool IdentifyGap(double score)

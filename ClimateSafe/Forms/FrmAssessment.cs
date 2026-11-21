@@ -94,17 +94,17 @@ namespace ClimateSafe
         private const int RightW = 357;
         private const int DesignLeftW = 738;
 
-        private readonly string[] hazardNames = { "Banjir", "Cuaca Ekstrem", "Suhu Panas Ekstrem" };
-        private readonly string[] hazardLower = { "banjir", "cuaca ekstrem", "suhu panas ekstrem" };
-        private readonly string[] hazardGlyph = { "\u2248", "\u2602", "\u2600" };
-        private readonly string[] hazardDesc =
+        internal static readonly string[] hazardNames = { "Banjir", "Cuaca Ekstrem", "Suhu Panas Ekstrem" };
+        internal static readonly string[] hazardLower = { "banjir", "cuaca ekstrem", "suhu panas ekstrem" };
+        internal static readonly string[] hazardGlyph = { "\u2248", "\u2602", "\u2600" };
+        internal static readonly string[] hazardDesc =
         {
             "Genangan, luapan sungai, dan drainase buruk.",
             "Angin kencang, hujan lebat, dan sambaran petir.",
             "Gelombang panas, dehidrasi, dan perlindungan ruangan."
         };
 
-        private readonly string[] dimNames =
+        internal static readonly string[] dimNames =
         {
             "Perlengkapan darurat", "Jalur evakuasi", "Kontak darurat",
             "Rencana logistik", "Pengetahuan bencana"
@@ -114,7 +114,7 @@ namespace ClimateSafe
             "PERLENGKAPAN DARURAT", "JALUR EVAKUASI", "KONTAK DARURAT",
             "RENCANA LOGISTIK", "PENGETAHUAN BENCANA"
         };
-        private readonly string[] dimGlyph = { "\u2692", "\u27A4", "\u260E", "\u2630", "\u2139" };
+        internal static readonly string[] dimGlyph = { "\u2692", "\u27A4", "\u260E", "\u2630", "\u2139" };
 
         private readonly string[] questionText =
         {
@@ -209,6 +209,14 @@ namespace ClimateSafe
                 ResetAnswers();
                 RefreshQuestion();
             }
+        }
+
+        // Dipakai Nav.ShowAssessmentQuestions: memakai logika SelectHazard yang sudah ada.
+        public void ApplyHazard(int index)
+        {
+            if (!asBuilt) return;
+            if (index < 0 || index >= hazardNames.Length) return;
+            SelectHazard(index);
         }
 
         private void ResetAnswers()
@@ -900,7 +908,9 @@ namespace ClimateSafe
                 }
 
                 Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
-                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(assessment, dimNames);
+                var recommendationRepository = new RecommendationRepository();
+                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(
+                    assessment, dimNames, recommendationRepository.GetDimensionThresholds());
                 var recommendationService = new RecommendationService();
                 IReadOnlyList<Recommendation> recommendations =
                     recommendationService.GenerateRecommendations(hazard, gaps);
@@ -914,7 +924,6 @@ namespace ClimateSafe
                 // "belum tersimpan" tidak muncul untuk data yang sudah masuk.
                 try
                 {
-                    var recommendationRepository = new RecommendationRepository();
                     IReadOnlyList<DimensionScore> dimensionScores =
                         recommendationRepository.GetDimensionScores(
                             Session.CurrentUser.UserId, assessmentId);
@@ -990,7 +999,7 @@ namespace ClimateSafe
 
         private void BuildNote(Panel host)
         {
-            noteCard = Card(host, DesignLeftW + ColGap, 807, RightW, 148, 14, coralBg, coralLine);
+            noteCard = Card(host, DesignLeftW + ColGap, 807, RightW, 127, 14, coralBg, coralLine);
 
             RoundPanel ib = Card(noteCard, 21, 22, 32, 32, 8, coralSoft, Color.Empty);
             AddSymbol(ib, "\u2714", 0, 0, 32, 32, 10f, coral);
@@ -1001,8 +1010,7 @@ namespace ClimateSafe
             {
                 "Jawabanmu digunakan untuk",
                 "mengidentifikasi rekomendasi",
-                "tindakan dan checklist yang tepat",
-                "sesuai wilayah tempat tinggalmu."
+                "tindakan dan checklist yang tepat."
             };
             for (int i = 0; i < lines.Length; i++)
             {

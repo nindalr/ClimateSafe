@@ -571,6 +571,7 @@ namespace ClimateSafe
     {
         private static FrmDashboard dashboard;
         private static FrmAssessment assessment;
+        private static FrmPilihBahaya pilihBahaya;
         private static FrmRekomendasi rekomendasi;
         private static FrmChecklist checklist;
         private static FrmRiwayat riwayat;
@@ -586,6 +587,9 @@ namespace ClimateSafe
 
             FrmAssessment a = f as FrmAssessment;
             if (a != null) assessment = a;
+
+            FrmPilihBahaya pb = f as FrmPilihBahaya;
+            if (pb != null) pilihBahaya = pb;
 
             FrmRekomendasi r = f as FrmRekomendasi;
             if (r != null) rekomendasi = r;
@@ -620,12 +624,24 @@ namespace ClimateSafe
             SwitchTo(dashboard, from);
         }
 
+        // Langkah 1 alur asesmen: halaman Pilih Bahaya.
         public static void ShowAssessment(Form from)
+        {
+            if (pilihBahaya == null || pilihBahaya.IsDisposed)
+            {
+                pilihBahaya = new FrmPilihBahaya();
+            }
+            SwitchTo(pilihBahaya, from);
+        }
+
+        // Langkah 2: halaman pertanyaan dengan bahaya terpilih dari langkah 1.
+        public static void ShowAssessmentQuestions(Form from, int hazardIdx)
         {
             if (assessment == null || assessment.IsDisposed)
             {
                 assessment = new FrmAssessment();
             }
+            assessment.ApplyHazard(hazardIdx);
             SwitchTo(assessment, from);
         }
 
@@ -710,6 +726,13 @@ namespace ClimateSafe
             if (checklist != null && !checklist.IsDisposed) checklist.Hide();
             if (riwayat != null && !riwayat.IsDisposed) riwayat.Hide();
             if (edukasi != null && !edukasi.IsDisposed) edukasi.Hide();
+            if (pilihBahaya != null && !pilihBahaya.IsDisposed)
+            {
+                // Halaman langkah 1 dibuang mengikuti pola Profil dan Hasil.
+                quitting = true;
+                pilihBahaya.Hide();
+                pilihBahaya.Dispose();
+            }
             if (hasil != null && !hasil.IsDisposed)
             {
                 // Halaman hasil dibuang agar hasil pengguna sebelumnya tidak muncul lagi.
@@ -727,6 +750,7 @@ namespace ClimateSafe
             }
             dashboard = null;
             assessment = null;
+            pilihBahaya = null;
             rekomendasi = null;
             checklist = null;
             riwayat = null;
@@ -796,6 +820,13 @@ namespace ClimateSafe
         private bool dashBuilt;
         private ChecklistSession? latestSession;
         private readonly ChecklistService checklistService;
+        private readonly WeatherService weatherService = new WeatherService();
+        private readonly System.Windows.Forms.Timer weatherTimer = new System.Windows.Forms.Timer { Interval = 15 * 60 * 1000 };
+        private Label weatherLabel;
+        private Label weatherIcon;
+        private Label weatherDetails;
+        private DateTime weatherLastFetched = DateTime.MinValue;
+        private bool weatherLoading;
 
         public FrmDashboard() : this(new ChecklistService())
         {
@@ -807,6 +838,8 @@ namespace ClimateSafe
             InitializeComponent();
             BuildDashboard();
             Nav.Register(this);
+            weatherTimer.Tick += async (sender, e) => await RefreshWeatherAsync();
+            FormClosed += (sender, e) => weatherTimer.Dispose();
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -817,7 +850,38 @@ namespace ClimateSafe
                 RefreshUserCard();
                 if (greetingLabel != null) greetingLabel.Text = "Halo, " + Session.FirstName;
                 RefreshSavedData();
+                weatherTimer.Start();
+                _ = RefreshWeatherAsync();
             }
+            else if (!Visible) weatherTimer.Stop();
+        }
+
+        private async System.Threading.Tasks.Task RefreshWeatherAsync()
+        {
+            if (weatherLoading || DateTime.UtcNow - weatherLastFetched < TimeSpan.FromMinutes(15)) return;
+            weatherLoading = true;
+            weatherLabel.Text = "Memuat cuaca...";
+            weatherDetails.Text = "Sumber: Open-Meteo";
+            try
+            {
+                WeatherData weather = await weatherService.GetYogyakartaAsync();
+                if (IsDisposed || Disposing) return;
+                weatherLabel.Text = $"Yogyakarta {weather.Temperature:0}°C";
+                weatherIcon.Text = weather.Icon;
+                weatherDetails.Text = $"{weather.Condition} · Open-Meteo";
+                weatherLastFetched = DateTime.UtcNow;
+            }
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException ||
+                                       ex is System.Threading.Tasks.TaskCanceledException ||
+                                       ex is System.Text.Json.JsonException || ex is IOException ||
+                                       ex is InvalidOperationException || ex is FormatException)
+            {
+                if (IsDisposed || Disposing) return;
+                weatherLabel.Text = "Tidak tersedia";
+                weatherIcon.Text = "?";
+                weatherDetails.Text = "Sumber: Open-Meteo";
+            }
+            finally { weatherLoading = false; }
         }
 
         internal void RefreshSavedData()
@@ -1279,9 +1343,11 @@ namespace ClimateSafe
             AddAligned(dateCard, tanggal, 34, 0, 152, 32, 8.5f, false, ink, ContentAlignment.MiddleLeft);
 
             RoundPanel weatherCard = Card(dashHeader, 906, 64, 147, 32, 16, Color.White, pillBorder);
-            AddSymbol(weatherCard, "\u2600", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
-            AddAligned(weatherCard, "Yogyakarta 28\u00B0C", 34, 0, 110, 32, 8.5f, false, ink,
+            weatherIcon = AddSymbol(weatherCard, "?", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
+            weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
+            weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", 906, 98, 147, 18, 7f, false, muted,
+                ContentAlignment.MiddleCenter);
 
             RoundPanel bell = Card(dashHeader, 1065, 64, 32, 32, 16, Color.White, pillBorder);
             AddEmoji(bell, "\U0001F514", 0, 0, 32, 32, 10f, muted);
@@ -1294,6 +1360,7 @@ namespace ClimateSafe
             {
                 bell.Left = dashHeader.Width - 30 - bell.Width;
                 weatherCard.Left = bell.Left - 12 - weatherCard.Width;
+                weatherDetails.Left = weatherCard.Left;
                 dateCard.Left = weatherCard.Left - 12 - dateCard.Width;
             };
         }
