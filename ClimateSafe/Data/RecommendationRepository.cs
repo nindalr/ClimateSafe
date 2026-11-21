@@ -6,18 +6,28 @@ using Npgsql;
 namespace ClimateSafe
 {
     // Skor satu dimensi kesiapsiagaan pada sebuah asesmen, dalam persen (0..100).
-    internal sealed record DimensionScore(int HazardId, int DimensionId, string DimensionName, double Score);
+    internal sealed record DimensionScore(int HazardId, int DimensionId, string DimensionName, double Score, double PassingThreshold);
 
     internal sealed class RecommendationRepository
     {
-        // Skor jawaban tertinggi per pertanyaan (Models/Answer: skala 0..3).
-        private const double MaxAnswerScore = 3;
-
         private readonly Func<NpgsqlConnection> createConnection;
 
         public RecommendationRepository(Func<NpgsqlConnection>? createConnection = null)
         {
             this.createConnection = createConnection ?? Database.Create;
+        }
+
+        public IReadOnlyDictionary<int, double> GetDimensionThresholds()
+        {
+            var thresholds = new Dictionary<int, double>();
+            using var connection = createConnection();
+            connection.Open();
+            using var command = new NpgsqlCommand(
+                "SELECT dimension_id, passing_threshold FROM preparedness_dimensions", connection);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+                thresholds.Add(reader.GetInt32(0), Convert.ToDouble(reader.GetValue(1)));
+            return thresholds;
         }
 
         // Baca-saja: daftar kategori bahaya, urut hazard_id (dipakai halaman Edukasi).
@@ -48,11 +58,12 @@ namespace ClimateSafe
             var order = new List<int>();
             var names = new Dictionary<int, string>();
             var hazards = new Dictionary<int, int>();
+            var thresholds = new Dictionary<int, double>();
 
             using var connection = createConnection();
             connection.Open();
             using var command = new NpgsqlCommand("""
-                SELECT a.hazard_id, q.dimension_id, d.name, aa.score
+                SELECT a.hazard_id, q.dimension_id, COALESCE(aa.dimension_name, d.name), aa.score, d.passing_threshold
                 FROM assessments a
                 JOIN assessment_answers aa ON aa.assessment_id = a.assessment_id
                 JOIN questions q ON q.question_id = aa.question_id
@@ -69,13 +80,14 @@ namespace ClimateSafe
                 int hazardId = reader.GetInt32(0);
                 int dimensionId = reader.GetInt32(1);
                 string name = reader.GetString(2);
-                double score = Convert.ToDouble(reader.GetValue(3)) * 100.0 / MaxAnswerScore;
+                double score = Convert.ToDouble(reader.GetValue(3)) * 100.0 / AssessmentRules.MaximumAnswerScore;
 
                 if (!counts.ContainsKey(dimensionId))
                 {
                     order.Add(dimensionId);
                     names[dimensionId] = name;
                     hazards[dimensionId] = hazardId;
+                    thresholds[dimensionId] = Convert.ToDouble(reader.GetValue(4));
                     sums[dimensionId] = 0;
                     counts[dimensionId] = 0;
                 }
@@ -86,7 +98,7 @@ namespace ClimateSafe
             foreach (int dimensionId in order)
             {
                 totals.Add(new DimensionScore(hazards[dimensionId], dimensionId,
-                    names[dimensionId], sums[dimensionId] / counts[dimensionId]));
+                    names[dimensionId], sums[dimensionId] / counts[dimensionId], thresholds[dimensionId]));
             }
             return totals;
         }

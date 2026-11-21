@@ -908,7 +908,9 @@ namespace ClimateSafe
                 }
 
                 Assessment assessment = scoringService.Evaluate(hazard, answerText, answers);
-                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(assessment, dimNames);
+                var recommendationRepository = new RecommendationRepository();
+                IReadOnlyList<DimensionGap> gaps = scoringService.IdentifyGaps(
+                    assessment, dimNames, recommendationRepository.GetDimensionThresholds());
                 var recommendationService = new RecommendationService();
                 IReadOnlyList<Recommendation> recommendations =
                     recommendationService.GenerateRecommendations(hazard, gaps);
@@ -922,7 +924,6 @@ namespace ClimateSafe
                 // "belum tersimpan" tidak muncul untuk data yang sudah masuk.
                 try
                 {
-                    var recommendationRepository = new RecommendationRepository();
                     IReadOnlyList<DimensionScore> dimensionScores =
                         recommendationRepository.GetDimensionScores(
                             Session.CurrentUser.UserId, assessmentId);

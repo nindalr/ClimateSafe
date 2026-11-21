@@ -183,8 +183,6 @@ namespace ClimateSafe
         private const int ColGap = 24;
         private const int HeadH = 52;
         private const int DimRowH = 64;
-        private const double PassingTarget = 75;
-        private const double HighPriorityBelow = 40;
         private const string NotReadyLevel = "Belum Siap";
         private const string HighPriority = "Tinggi";
         private const string MediumPriority = "Sedang";
@@ -381,7 +379,7 @@ namespace ClimateSafe
             RoundPanel card = Card(host, 0, top, w, SummaryH, 16, Color.White, line);
             Stretch(card, host, 0, 0);
 
-            bool low = data.OverallScore < HighPriorityBelow;
+            bool low = data.OverallScore < AssessmentRules.HighPriorityBelow;
             ScoreRing ring = new ScoreRing();
             ring.Bounds = new Rectangle(24, 24, 120, 120);
             ring.Thickness = 10;
@@ -413,7 +411,7 @@ namespace ClimateSafe
 
             // 2. Dimensi di bawah target
             int col2 = colLeft + colW + ColGap;
-            AddText(card, "Dimensi di bawah target 75", col2, 36, colW, 16, 9f, true, muted);
+            AddText(card, "Dimensi di bawah target", col2, 36, colW, 16, 9f, true, muted);
             AddText(card, data.GapCount + " dari 5", col2, 60, colW, 30, 18f, true, ink);
 
             // 3. Asesmen
@@ -435,12 +433,12 @@ namespace ClimateSafe
             AddAligned(card, "Skor per dimensi", 24, 0, 240, HeadH, 11f, true, titleBlue,
                 ContentAlignment.MiddleLeft);
 
-            int markerTextW = Measure("Target 75", 9f, FontStyle.Regular);
+            int markerTextW = Measure("Target dimensi", 9f, FontStyle.Regular);
             Panel marker = new Panel();
             marker.Bounds = new Rectangle(w - 24 - markerTextW - 8 - 2, (HeadH - 12) / 2, 2, 12);
             marker.BackColor = muted;
             card.Controls.Add(marker);
-            AddAligned(card, "Target 75", w - 24 - markerTextW, 0, markerTextW + 4, HeadH, 9f, false, muted,
+            AddAligned(card, "Target dimensi", w - 24 - markerTextW, 0, markerTextW + 4, HeadH, 9f, false, muted,
                 ContentAlignment.MiddleLeft);
 
             Panel headLine = new Panel();
@@ -465,9 +463,9 @@ namespace ClimateSafe
                 int nameW = Measure(dim.DimensionName, 10f, FontStyle.Bold) + 4;
                 AddText(row, dim.DimensionName, 24, 10, nameW, 18, 10f, true, ink);
 
-                if (dim.Score < PassingTarget)
+                if (dim.Score < dim.PassingThreshold)
                 {
-                    bool high = dim.Score < HighPriorityBelow;
+                    bool high = dim.Score < AssessmentRules.HighPriorityBelow;
                     int tagW = Measure("Perlu ditingkatkan", 8f, FontStyle.Bold) + 16;
                     RoundPanel tag = Card(row, 24 + nameW + 8, 11, tagW, 20, 10,
                         high ? coralSoft : pillBlueBg, Color.Empty);
@@ -478,8 +476,8 @@ namespace ClimateSafe
                 TargetBar bar = new TargetBar();
                 bar.Bounds = new Rectangle(24, 36, w - 48, 14);
                 bar.Value = (float)(dim.Score / 100.0);
-                bar.Target = (float)(PassingTarget / 100.0);
-                bar.BarColor = dim.Score < HighPriorityBelow ? barHigh : navy;
+                bar.Target = (float)(dim.PassingThreshold / 100.0);
+                bar.BarColor = dim.Score < AssessmentRules.HighPriorityBelow ? barHigh : navy;
                 bar.TrackColor = barTrack;
                 bar.TargetColor = muted;
                 row.Controls.Add(bar);

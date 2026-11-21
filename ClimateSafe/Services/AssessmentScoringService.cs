@@ -6,13 +6,15 @@ namespace ClimateSafe
 {
     internal sealed class AssessmentScoringService
     {
-        private static readonly int[] AnswerWeights = { 3, 2, 1, 0 };
+        private static readonly int[] AnswerWeights = { AssessmentRules.MaximumAnswerScore, 2, 1, 0 };
 
         public IReadOnlyList<DimensionGap> IdentifyGaps(
-            Assessment assessment, IReadOnlyList<string> dimensionNames)
+            Assessment assessment, IReadOnlyList<string> dimensionNames,
+            IReadOnlyDictionary<int, double> thresholds)
         {
             ArgumentNullException.ThrowIfNull(assessment);
             ArgumentNullException.ThrowIfNull(dimensionNames);
+            ArgumentNullException.ThrowIfNull(thresholds);
 
             var answers = assessment.GetAnswers()
                 .ToDictionary(answer => answer.Question.QuestionId);
@@ -30,7 +32,11 @@ namespace ClimateSafe
                     throw new ArgumentException("Nama dimensi dan pertanyaan terkait harus tersedia.");
                 }
 
-                var dimension = new PreparednessDimension(i + 1, dimensionNames[i]);
+                if (!thresholds.TryGetValue(i + 1, out double threshold))
+                {
+                    throw new InvalidOperationException($"Target untuk dimensi {i + 1} tidak tersedia di database.");
+                }
+                var dimension = new PreparednessDimension(i + 1, dimensionNames[i], threshold);
                 dimension.AddQuestion(answer.Question);
                 double score = dimension.CalculateScore(assessment);
                 if (dimension.IdentifyGap(score))

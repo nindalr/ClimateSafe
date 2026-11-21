@@ -555,16 +555,17 @@ namespace ClimateSafe
         private const int HeadRows = 88;     // header kartu 52 + judul kolom 36
         private const string AllFilter = "Semua";
         private const string NotReadyLevel = "Belum Siap";
-        private const double PassingTarget = 75;
-        private const double HighPriorityBelow = 40;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
-        private readonly ChecklistService checklistService = new ChecklistService();
-        private readonly RecommendationRepository recommendationRepository = new RecommendationRepository();
+        private readonly ChecklistService checklistService;
+        private readonly RecommendationRepository recommendationRepository;
+        private readonly AssessmentHistoryRepository historyRepository;
 
         private readonly List<ChecklistSession> sessions = new List<ChecklistSession>();
         private readonly Dictionary<int, List<DimensionScore>> dimensionCache =
             new Dictionary<int, List<DimensionScore>>();
+        private readonly Dictionary<int, IReadOnlyList<AssessmentHistoryAnswer>> answerCache =
+            new Dictionary<int, IReadOnlyList<AssessmentHistoryAnswer>>();
         private readonly List<RiwayatRowView> rowViews = new List<RiwayatRowView>();
 
         private BufferedPanel riwScroll;
@@ -577,8 +578,17 @@ namespace ClimateSafe
         private int openId;
         private bool riwBuilt;
 
-        public FrmRiwayat()
+        public FrmRiwayat() : this(new ChecklistService(), new RecommendationRepository(),
+            new AssessmentHistoryRepository())
         {
+        }
+
+        internal FrmRiwayat(ChecklistService checklistService,
+            RecommendationRepository recommendationRepository, AssessmentHistoryRepository historyRepository)
+        {
+            this.checklistService = checklistService;
+            this.recommendationRepository = recommendationRepository;
+            this.historyRepository = historyRepository;
             BuildRiwayat();
             Nav.Register(this);
         }
@@ -686,6 +696,7 @@ namespace ClimateSafe
                 sessions.AddRange(loaded.OrderByDescending(s => s.CreatedAt)
                                         .ThenByDescending(s => s.AssessmentId));
                 dimensionCache.Clear();
+                answerCache.Clear();
                 openId = 0;
 
                 List<string> hazards = HazardFilters();
@@ -699,6 +710,7 @@ namespace ClimateSafe
                     "Riwayat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 sessions.Clear();
                 dimensionCache.Clear();
+                answerCache.Clear();
                 openId = 0;
                 filter = AllFilter;
                 if (content == null) RebuildContent();
@@ -978,8 +990,10 @@ namespace ClimateSafe
                 {
                     try
                     {
-                        dimensionCache[assessmentId] = recommendationRepository
-                            .GetDimensionScores(CurrentUserId, assessmentId).ToList();
+                        var scores = recommendationRepository.GetDimensionScores(CurrentUserId, assessmentId).ToList();
+                        var answers = historyRepository.GetAnswers(CurrentUserId, assessmentId);
+                        dimensionCache[assessmentId] = scores;
+                        answerCache[assessmentId] = answers;
                     }
                     catch (Exception ex)
                     {
@@ -1070,8 +1084,8 @@ namespace ClimateSafe
                     TargetBar bar = new TargetBar();
                     bar.Bounds = new Rectangle(224, y + 3, 360, 14);
                     bar.Value = (float)(s.Score / 100.0);
-                    bar.Target = (float)(PassingTarget / 100.0);
-                    bar.BarColor = s.Score < HighPriorityBelow ? barHigh : navy;
+                    bar.Target = (float)(s.PassingThreshold / 100.0);
+                    bar.BarColor = s.Score < AssessmentRules.HighPriorityBelow ? barHigh : navy;
                     bar.TrackColor = barTrack;
                     bar.TargetColor = ink;
                     panel.Controls.Add(bar);
@@ -1088,8 +1102,34 @@ namespace ClimateSafe
 
             if (scores.Count > 0)
             {
-                AddAligned(panel, "Garis hitam menandai target 75.", 24, y, 320, 40, 9f, false, muted,
+                AddAligned(panel, "Garis hitam menandai target tiap dimensi saat ini.", 24, y, 320, 40, 9f, false, muted,
                     ContentAlignment.MiddleLeft);
+            }
+
+            y += 52;
+            AddText(panel, "Jawaban asesmen", 24, y, 280, 24, 10f, true, titleBlue);
+            y += 32;
+            if (!answerCache.TryGetValue(assessmentId, out var answers) || answers.Count == 0)
+            {
+                AddText(panel, "Tidak ada jawaban tersimpan untuk sesi ini.", 24, y, 550, 30, 9f, false, muted);
+                y += 40;
+            }
+            else
+            {
+                foreach (AssessmentHistoryAnswer answer in answers)
+                {
+                    AddText(panel, answer.DimensionName + " · Bobot " + answer.Score + "/3",
+                        24, y, 650, 25, 9f, true, navy);
+                    y += 27;
+                    // Gunakan lebar minimum halaman agar teks tetap terbaca saat jendela diperkecil.
+                    using Font font = UI.Body(9f, FontStyle.Regular);
+                    string detail = answer.QuestionText + "\nJawaban: " + answer.SelectedAnswer;
+                    int height = TextRenderer.MeasureText(detail, font, new Size(750, int.MaxValue),
+                        TextFormatFlags.WordBreak | TextFormatFlags.NoPadding).Height + 10;
+                    Label label = AddText(panel, detail, 24, y, 750, height, 9f, false, ink);
+                    label.UseMnemonic = false;
+                    y += height + 16;
+                }
             }
 
             int buttonW = Measure("Buka Checklist", 9.5f, FontStyle.Bold) + 48;
