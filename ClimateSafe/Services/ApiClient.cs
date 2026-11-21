@@ -68,3 +68,7 @@ internal sealed record ApiEducation(int ContentId, int HazardId, string Title, s
 internal sealed record ApiAdminEducation(int ContentId, int HazardId, string Title, string Body, string? SourceName,
     string? SourceUrl, bool IsPublished, DateTime? PublishedAt, DateTime CreatedAt, DateTime UpdatedAt, int? UpdatedBy,
     string? PublishedTitle, string? PublishedBody, string? PublishedSourceName, string? PublishedSourceUrl);
+internal sealed record ApiMonitoringAssessment(int AssessmentId, DateTime CreatedAt, string UserName,
+    string HazardName, double OverallScore, string Level);
+internal sealed record ApiMonitoringReport(long TotalUsers, long ActiveUsers, long TotalAssessments,
+    int Page, int PageSize, DateTimeOffset StartUtc, DateTimeOffset EndUtc, List<ApiMonitoringAssessment> Assessments);
