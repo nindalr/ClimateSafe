@@ -9,9 +9,24 @@ namespace ClimateSafe.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/assessments")]
-public sealed class AssessmentsController(AssessmentHistoryRepository repository) : ControllerBase
+public sealed class AssessmentsController(AssessmentHistoryRepository repository,
+    AssessmentSubmissionRepository submissionRepository) : ControllerBase
 {
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    [HttpPost]
+    public async Task<ActionResult<AssessmentSubmissionResult>> Submit(AssessmentSubmissionRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await submissionRepository.SubmitAsync(UserId, request, ct);
+            return result.Created ? CreatedAtAction(nameof(GetDetail), new { id = result.AssessmentId }, result) : Ok(result);
+        }
+        catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (SubmissionConflictException) { return Conflict(new { message = "Kunci pengiriman sudah digunakan untuk asesmen lain." }); }
+        catch (UnauthorizedAccessException) { return Unauthorized(); }
+        catch (InvalidOperationException) { return Problem(statusCode: 503, title: "Konfigurasi asesmen belum tersedia."); }
+    }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AssessmentSummary>>> GetAll(CancellationToken ct) =>
