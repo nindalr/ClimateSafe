@@ -733,6 +733,13 @@ namespace ClimateSafe
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // Lebar teks diukur seperti Label menggambar (padding bawaan TextRenderer), agar
+        // baris hasil bungkus benar-benar muat di lebar labelnya dan tidak terpotong.
+        private static int LabelWidth(string text, Font font)
+        {
+            return TextRenderer.MeasureText(text, font).Width;
+        }
+
         private static List<string> WrapLines(string text, Font font, int maxWidth)
         {
             List<string> lines = new List<string>();
@@ -742,8 +749,7 @@ namespace ClimateSafe
             foreach (string word in words)
             {
                 string test = cur.Length == 0 ? word : cur + " " + word;
-                int tw = TextRenderer.MeasureText(test, font,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                int tw = LabelWidth(test, font);
                 if (tw > maxWidth && cur.Length > 0)
                 {
                     lines.Add(cur);
