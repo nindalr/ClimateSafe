@@ -232,7 +232,7 @@ namespace ClimateSafe
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
         private const int ContentTop = 104;
-        private const string NotReadyLevel = "Belum Siap";
+        private const string NotReadyLevel = ScoringRules.NotReadyLevel;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly ChecklistService service;

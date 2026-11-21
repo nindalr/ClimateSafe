@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -899,7 +899,7 @@ namespace ClimateSafe
                 BuildPriorities(dashPage);
                 LayoutPage();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi API.",
                     "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
