@@ -218,9 +218,10 @@ namespace ClimateSafe
 
                 RebuildContent(session, scores, recommendations, hazardId);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi PostgreSQL.",
+                MessageBox.Show(this, "Data rekomendasi belum dapat dimuat.\nDetail teknis: " +
+                    TechnicalDetail(ex),
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
                 {
@@ -592,6 +593,15 @@ namespace ClimateSafe
         private int ButtonWidth(string text)
         {
             return Measure(text, 9.5f, FontStyle.Bold) + 48;
+        }
+
+
+        // Detail teknis error database (tanpa connection string atau kredensial).
+        private static string TechnicalDetail(Exception ex)
+        {
+            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
+            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
+            return ex.Message;
         }
 
         private static int Measure(string text, float size, FontStyle style)

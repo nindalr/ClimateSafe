@@ -183,9 +183,10 @@ namespace ClimateSafe
         private const int ColGap = 24;
         private const int HeadH = 52;
         private const int DimRowH = 64;
-        private const string NotReadyLevel = "Belum Siap";
-        private const string HighPriority = "Tinggi";
-        private const string MediumPriority = "Sedang";
+        // Aturan skor berasal dari ScoringRules.
+        private const string NotReadyLevel = ScoringRules.NotReadyLevel;
+        private const string HighPriority = ScoringRules.HighPriority;
+        private const string MediumPriority = ScoringRules.MediumPriority;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
 
@@ -433,12 +434,16 @@ namespace ClimateSafe
             AddAligned(card, "Skor per dimensi", 24, 0, 240, HeadH, 11f, true, titleBlue,
                 ContentAlignment.MiddleLeft);
 
-            int markerTextW = LabelWidth("Target 75", 9f, FontStyle.Regular);
+                        var targets = data.Dimensions.Select(d => d.PassingThreshold).Distinct().ToList();
+            string targetText = targets.Count == 1
+                ? "Target " + targets[0].ToString("0")
+                : "Target tiap dimensi";
+            int markerTextW = LabelWidth(targetText, 9f, FontStyle.Regular);
             Panel marker = new Panel();
             marker.Bounds = new Rectangle(w - 24 - markerTextW - 8 - 2, (HeadH - 12) / 2, 2, 12);
             marker.BackColor = muted;
             card.Controls.Add(marker);
-            AddAligned(card, "Target 75", w - 24 - markerTextW, 0, markerTextW, HeadH, 9f, false, muted,
+            AddAligned(card, targetText, w - 24 - markerTextW, 0, markerTextW, HeadH, 9f, false, muted,
                 ContentAlignment.MiddleLeft);
 
             Panel headLine = new Panel();

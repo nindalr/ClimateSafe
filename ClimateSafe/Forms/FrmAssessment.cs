@@ -959,10 +959,19 @@ namespace ClimateSafe
             {
                 Info(ex.Message);
             }
-            catch (Npgsql.NpgsqlException)
+            catch (Npgsql.NpgsqlException ex)
             {
-                Info("Asesmen belum tersimpan. Periksa koneksi PostgreSQL lalu coba lagi.");
+                Info("Asesmen belum tersimpan.\nDetail teknis: " + TechnicalDetail(ex));
             }
+        }
+
+
+        // Detail teknis error database (tanpa connection string atau kredensial).
+        private static string TechnicalDetail(Exception ex)
+        {
+            Npgsql.PostgresException? pg = ex as Npgsql.PostgresException;
+            if (pg != null) return pg.MessageText + " (SQLSTATE " + pg.SqlState + ")";
+            return ex.Message;
         }
 
         private void BuildDimensions(Panel host)
