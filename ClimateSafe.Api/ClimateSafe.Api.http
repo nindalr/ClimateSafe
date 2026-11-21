@@ -33,3 +33,26 @@ GET {{ClimateSafe.Api_HostAddress}}/api/admin/users
 Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
 
 ###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/assessments/1/checklist
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+
+###
+
+PATCH {{ClimateSafe.Api_HostAddress}}/api/checklist/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_LOGIN
+Content-Type: application/json
+
+{ "isCompleted": true }
+
+###

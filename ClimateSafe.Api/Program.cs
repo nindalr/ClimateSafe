@@ -4,6 +4,7 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSingleton<ClimateSafe.Api.Data.HazardRepository>();
 builder.Services.AddSingleton<ClimateSafe.Api.Data.AccountRepository>();
+builder.Services.AddSingleton<ClimateSafe.Api.Data.AssessmentHistoryRepository>();
 builder.Services.AddAuthentication("Session")
     .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ClimateSafe.Api.Services.SessionAuthenticationHandler>("Session", null);
 builder.Services.AddAuthorization();
