@@ -523,10 +523,6 @@ namespace ClimateSafe
                     {
                         Nav.ShowEdukasi(this);
                     }
-                    else if (nama != "Asesmen")
-                    {
-                        Info("Menu " + nama + " dibuka.");
-                    }
                 });
                 menuItems.Add(item);
             }

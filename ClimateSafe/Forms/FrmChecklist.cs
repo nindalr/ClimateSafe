@@ -914,10 +914,6 @@ namespace ClimateSafe
                     {
                         Nav.ShowEdukasi(this);
                     }
-                    else if (nama != "Checklist")
-                    {
-                        Info("Menu " + nama + " dibuka.");
-                    }
                 });
                 menuItems.Add(item);
             }

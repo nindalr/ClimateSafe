@@ -821,10 +821,6 @@ namespace ClimateSafe
                     {
                         Nav.ShowEdukasi(this);
                     }
-                    else if (nama != "Rekomendasi")
-                    {
-                        Info("Menu " + nama + " dibuka.");
-                    }
                 });
                 menuItems.Add(item);
             }

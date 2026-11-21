@@ -1167,12 +1167,6 @@ namespace ClimateSafe
             }
         }
 
-        private void Info(string message)
-        {
-            MessageBox.Show(message, "ClimateSafe",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
         private static Image LoadAsset(string baseName)
         {
             string[] exts = { ".jpg", ".jpeg", ".png" };
@@ -1246,10 +1240,6 @@ namespace ClimateSafe
                     else if (nama == "Edukasi")
                     {
                         Nav.ShowEdukasi(this);
-                    }
-                    else if (nama != "Beranda")
-                    {
-                        Info("Menu " + nama + " dibuka.");
                     }
                 });
                 menuItems.Add(item);
@@ -1339,28 +1329,22 @@ namespace ClimateSafe
 
             Color pillBorder = Color.FromArgb(226, 232, 240);
 
-            RoundPanel dateCard = Card(dashHeader, 704, 64, 190, 32, 16, Color.White, pillBorder);
+            RoundPanel dateCard = Card(dashHeader, PageMaxW - 30 - 147 - 12 - 190, 64, 190, 32, 16,
+                Color.White, pillBorder);
             AddSymbol(dateCard, "\u25A3", 10, 0, 20, 32, 10f, muted);
             AddAligned(dateCard, tanggal, 34, 0, 152, 32, 8.5f, false, ink, ContentAlignment.MiddleLeft);
 
-            RoundPanel weatherCard = Card(dashHeader, 906, 64, 147, 32, 16, Color.White, pillBorder);
+            RoundPanel weatherCard = Card(dashHeader, PageMaxW - 30 - 147, 64, 147, 32, 16,
+                Color.White, pillBorder);
             weatherIcon = AddSymbol(weatherCard, "?", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
             weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
-            weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", 906, 98, 147, 18, 7f, false, muted,
-                ContentAlignment.MiddleCenter);
-
-            RoundPanel bell = Card(dashHeader, 1065, 64, 32, 32, 16, Color.White, pillBorder);
-            AddEmoji(bell, "\U0001F514", 0, 0, 32, 32, 10f, muted);
-            MakeClickable(bell, delegate (object sender, EventArgs e)
-            {
-                Info("Tidak ada notifikasi baru.");
-            });
+            weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", PageMaxW - 30 - 147, 98,
+                147, 18, 7f, false, muted, ContentAlignment.MiddleCenter);
 
             dashHeader.Resize += delegate (object sender, EventArgs e)
             {
-                bell.Left = dashHeader.Width - 30 - bell.Width;
-                weatherCard.Left = bell.Left - 12 - weatherCard.Width;
+                weatherCard.Left = dashHeader.Width - 30 - weatherCard.Width;
                 weatherDetails.Left = weatherCard.Left;
                 dateCard.Left = weatherCard.Left - 12 - dateCard.Width;
             };
@@ -1920,33 +1904,12 @@ namespace ClimateSafe
 
             NewLabel(dashFooter, "\u201C", 21, 16, 30, 40, 22f, FontStyle.Bold, coral,
                 ContentAlignment.TopLeft, "Georgia");
-            NewLabel(dashFooter,
+            Label quote = NewLabel(dashFooter,
                 "Kesadaran dan persiapan adalah bentuk nyata dari kepedulian terhadap masa depan.",
-                55, 20, 700, 24, 10.5f, FontStyle.Italic, ink, ContentAlignment.TopLeft, UI.FontName);
+                55, 20, PageMaxW - 55 - 20, 24, 10.5f, FontStyle.Italic, ink,
+                ContentAlignment.TopLeft, UI.FontName);
+            Stretch(quote, dashFooter, 55, 20);
             AddText(dashFooter, "ClimateSafe", 55, 46, 200, 16, 8f, true, muted);
-
-            int downloadX = PageMaxW - 20 - 153;
-            int shareX = downloadX - 13 - 124;
-
-            RoundButton share = MakeButton(dashFooter, "Bagikan Dasbor", shareX, 22, 124, 35,
-                Color.White, Color.FromArgb(244, 247, 252), navy, Color.FromArgb(214, 224, 238), 8, 8f);
-            share.Click += delegate (object sender, EventArgs e)
-            {
-                Info("Tautan dasbor disalin untuk dibagikan.");
-            };
-
-            RoundButton download = MakeButton(dashFooter, "Unduh Laporan (PDF)", downloadX, 22, 153, 35,
-                btnBlue, Color.FromArgb(44, 94, 164), Color.White, Color.Empty, 8, 8f);
-            download.Click += delegate (object sender, EventArgs e)
-            {
-                Info("Laporan PDF sedang disiapkan...");
-            };
-
-            PinRight(download, dashFooter, 20);
-            dashFooter.Resize += delegate (object sender, EventArgs e)
-            {
-                share.Left = download.Left - 13 - share.Width;
-            };
         }
 
         private void lblTagline_Click(object sender, EventArgs e)

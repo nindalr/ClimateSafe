@@ -1393,10 +1393,6 @@ namespace ClimateSafe
                     {
                         Nav.ShowEdukasi(this);
                     }
-                    else if (nama != "Riwayat")
-                    {
-                        Info("Menu " + nama + " dibuka.");
-                    }
                 });
                 menuItems.Add(item);
             }
