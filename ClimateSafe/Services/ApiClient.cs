@@ -64,3 +64,7 @@ internal sealed record ApiQuestion(int Id, int DimensionId, string DimensionName
 internal sealed record ApiOption(int Id, string Text, int DisplayOrder);
 internal sealed record ApiSubmission(int AssessmentId, double OverallScore, string Level, bool Created);
 internal sealed record ApiHazard(int Id, string Name);
+internal sealed record ApiEducation(int ContentId, int HazardId, string Title, string Body, string? SourceName, string? SourceUrl, DateTime PublishedAt);
+internal sealed record ApiAdminEducation(int ContentId, int HazardId, string Title, string Body, string? SourceName,
+    string? SourceUrl, bool IsPublished, DateTime? PublishedAt, DateTime CreatedAt, DateTime UpdatedAt, int? UpdatedBy,
+    string? PublishedTitle, string? PublishedBody, string? PublishedSourceName, string? PublishedSourceUrl);

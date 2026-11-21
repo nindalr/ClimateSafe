@@ -17,7 +17,7 @@ Panduan ini menjelaskan cara menginstal, mengatur database, dan menggunakan apli
 
 ### Langkah 1. Menyiapkan database dan API
 
-Untuk pengembangan lokal, siapkan PostgreSQL dan jalankan migrasi 000 sampai 005 sesuai petunjuk di `ClimateSafe.Api/README.md`. Untuk database kosong, `database/setup.bat` juga dapat menyiapkan skema awal dan menjalankan migrasi 002 sampai 005. Perintah `setup.bat reset` menghapus database beserta seluruh datanya.
+Untuk pengembangan lokal, siapkan PostgreSQL dan jalankan migrasi 000 sampai 007 sesuai petunjuk di `ClimateSafe.Api/README.md`. Untuk database kosong, `database/setup.bat` juga dapat menyiapkan skema awal dan menjalankan migrasi 002 sampai 007. Perintah `setup.bat reset` menghapus database beserta seluruh datanya.
 
 Pada terminal pertama, atur connection string untuk API dan jalankan API:
 
@@ -111,7 +111,7 @@ Setelah login menggunakan akun admin, pengguna akan masuk ke halaman khusus admi
 Berikut fitur yang tersedia:
 
 - **Kelola Pengguna:** Admin dapat mencari akun berdasarkan nama atau email, kemudian memilih akun yang ingin dikelola. Admin dapat mengubah nama pengguna, menonaktifkan atau mengaktifkan akun, serta menghapus akun. Tindakan menonaktifkan dan menghapus akun memerlukan konfirmasi terlebih dahulu. Admin juga tidak dapat menonaktifkan atau menghapus akun yang sedang digunakan untuk login.
-- **Kelola Konten:** Admin dapat mengubah ringkasan materi edukasi untuk setiap jenis bahaya (Banjir, Cuaca Ekstrem, dan Suhu Panas Ekstrem). Admin dapat mengedit, menyimpan, atau membatalkan perubahan. Konten yang sudah disimpan akan ditampilkan pada menu Edukasi pengguna. Jika berpindah ke bahaya lain sebelum menyimpan perubahan, aplikasi akan meminta konfirmasi.
+- **Kelola Konten:** Admin dapat membuat beberapa materi untuk setiap bahaya, menyimpan draft, mempublikasikan, dan menarik publikasi. Pengguna melihat materi yang telah dipublikasikan.
 - **Log & Monitoring:** Admin dapat memantau aktivitas aplikasi berdasarkan periode (hari ini, 7 hari terakhir, atau 30 hari terakhir) dan jenis bahaya. Halaman ini menampilkan jumlah seluruh pengguna, pengguna aktif, dan asesmen yang selesai. Tersedia juga tabel riwayat asesmen yang berisi waktu, nama pengguna, jenis bahaya, skor, dan tingkat kesiapan. Tombol Muat Ulang digunakan untuk memperbarui data.
 
 Untuk keluar dari akun admin, klik tombol **Keluar** di bagian kiri bawah halaman.
@@ -141,7 +141,7 @@ Jika ketiga skenario menghasilkan kategori yang sesuai, fitur utama asesmen suda
 |---|---|
 | API tidak dapat dihubungi | Pastikan API berjalan dan `CLIMATESAFE_API_URL` menunjuk ke alamat yang benar. |
 | API gagal mengakses database | Periksa PostgreSQL dan `ConnectionStrings__ClimateSafe` pada terminal API. |
-| Tabel tidak ditemukan | Pastikan migrasi 000 sampai 005 telah dijalankan pada database yang digunakan API. |
+| Tabel tidak ditemukan | Pastikan migrasi 000 sampai 007 telah dijalankan pada database yang digunakan API. |
 | Login gagal | Periksa email, password, dan status akun. |
 
 ## Untuk Pengembang

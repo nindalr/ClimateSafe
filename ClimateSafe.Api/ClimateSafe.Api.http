@@ -15,6 +15,48 @@ Accept: application/json
 
 ###
 
+GET {{ClimateSafe.Api_HostAddress}}/api/education/hazards/1
+Accept: application/json
+
+###
+
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/education?hazardId=1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+Content-Type: application/json
+
+{ "hazardId": 1, "title": "Judul materi", "body": "Ringkasan yang telah disetujui tim.", "sourceName": null, "sourceUrl": null }
+
+###
+
+# Ganti 1 dengan contentId dari respons pembuatan materi.
+GET {{ClimateSafe.Api_HostAddress}}/api/admin/education/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+PUT {{ClimateSafe.Api_HostAddress}}/api/admin/education/1
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+Content-Type: application/json
+
+{ "title": "Judul materi", "body": "Ringkasan yang telah disetujui tim.", "sourceName": null, "sourceUrl": null }
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education/1/publish
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
+POST {{ClimateSafe.Api_HostAddress}}/api/admin/education/1/unpublish
+Authorization: Bearer GANTI_DENGAN_TOKEN_ADMIN
+
+###
+
 POST {{ClimateSafe.Api_HostAddress}}/api/account/register
 Content-Type: application/json
 

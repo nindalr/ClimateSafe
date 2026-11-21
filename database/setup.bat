@@ -34,7 +34,7 @@ if not exist "setup.sql" (
     exit /b 1
 )
 
-for %%F in (002_assessment_history.sql 003_account_sessions.sql 004_question_catalog.sql 005_assessment_submission.sql) do (
+for %%F in (002_assessment_history.sql 003_account_sessions.sql 004_question_catalog.sql 005_assessment_submission.sql 006_education_contents.sql 007_multiple_education_contents.sql) do (
     if not exist "..\ClimateSafe.Api\Data\Migrations\%%F" (
         echo [GAGAL] Migrasi %%F tidak ditemukan di ClimateSafe.Api\Data\Migrations.
         pause
@@ -97,6 +97,8 @@ if /i "%~1"=="reset" >> "%DRV%" echo DROP DATABASE IF EXISTS %DB_NAME% WITH (FOR
 >> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/003_account_sessions.sql
 >> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/004_question_catalog.sql
 >> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/005_assessment_submission.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/006_education_contents.sql
+>> "%DRV%" echo \i ../ClimateSafe.Api/Data/Migrations/007_multiple_education_contents.sql
 
 set "PGCLIENTENCODING=UTF8"
 echo Menjalankan setup. Ketik password PostgreSQL saat diminta
