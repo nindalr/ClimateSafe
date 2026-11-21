@@ -367,7 +367,7 @@ namespace ClimateSafe.Auth
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 138;
+            bottom.Height = 89;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -377,19 +377,7 @@ namespace ClimateSafe.Auth
             topLine.BackColor = line;
             bottom.Controls.Add(topLine);
 
-            Label settingsIcon = AddSymbol(bottom, "\u2699", 24, 24, 24, 24, 12f, muted);
-            Label settingsText = AddAligned(bottom, "Pengaturan", 56, 24, 150, 22, 10f, false,
-                muted, ContentAlignment.MiddleLeft);
-            EventHandler openSettings = delegate (object? sender, EventArgs e)
-            {
-                Info("Menu Pengaturan dibuka.");
-            };
-            settingsIcon.Cursor = Cursors.Hand;
-            settingsIcon.Click += openSettings;
-            settingsText.Cursor = Cursors.Hand;
-            settingsText.Click += openSettings;
-
-            RoundPanel userCard = Card(bottom, 16, 65, 223, 57, 12, Color.White, line);
+            RoundPanel userCard = Card(bottom, 16, 16, 223, 57, 12, Color.White, line);
 
             string displayName = string.IsNullOrWhiteSpace(currentUser.Name) ? "User" : currentUser.Name;
             string initials = displayName.Length >= 2

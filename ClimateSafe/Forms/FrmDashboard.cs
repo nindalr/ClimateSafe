@@ -683,12 +683,15 @@ namespace ClimateSafe
             SwitchTo(riwayat, from);
         }
 
-        public static void ShowEdukasi(Form from)
+        // hazardName opsional: tujuan bahaya dari kartu Beranda, dibaca FrmEdukasi
+        // saat halaman ditampilkan. Menu sidebar memanggil tanpa argumen.
+        public static void ShowEdukasi(Form from, string? hazardName = null)
         {
             if (edukasi == null || edukasi.IsDisposed)
             {
                 edukasi = new FrmEdukasi();
             }
+            if (hazardName != null) edukasi.PendingHazard = hazardName;
             SwitchTo(edukasi, from);
         }
 
@@ -1255,7 +1258,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 138;
+            bottom.Height = 89;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -1265,20 +1268,8 @@ namespace ClimateSafe
             topLine.BackColor = line;
             bottom.Controls.Add(topLine);
 
-            Label settingsIcon = AddSymbol(bottom, "\u2699", 24, 24, 24, 24, 12f, muted);
-            Label settingsText = AddAligned(bottom, "Pengaturan", 56, 24, 150, 22, 10f, false,
-                muted, ContentAlignment.MiddleLeft);
-            EventHandler openSettings = delegate (object sender, EventArgs e)
-            {
-                Info("Menu Pengaturan dibuka.");
-            };
-            settingsIcon.Cursor = Cursors.Hand;
-            settingsIcon.Click += openSettings;
-            settingsText.Cursor = Cursors.Hand;
-            settingsText.Click += openSettings;
-
             FocusCard user = new FocusCard();
-            user.Bounds = new Rectangle(16, 65, 223, 57);
+            user.Bounds = new Rectangle(16, 16, 223, 57);
             user.Radius = 12;
             user.Fill = Color.White;
             user.BorderColor = line;
@@ -1770,28 +1761,21 @@ namespace ClimateSafe
             AddText(pageHost, "Kenali jenis bahaya iklim dan langkah mitigasi terbaik.",
                 41, 1023, 450, 18, 8.5f, false, muted);
 
-            AddHazard(pageHost, 0, 0, "Banjir & Rob",
-                "Genangan air, luapan sungai, pasang rob laut, dan drainase lingkungan buruk.",
-                "Panduan evakuasi", "\U0001F30A", "\u2248",
-                Color.FromArgb(112, 132, 146), Color.FromArgb(60, 78, 92), "banjir",
-                "Membuka panduan evakuasi banjir & rob.");
+            // Nama bahaya dari satu sumber (FrmAssessment.hazardNames), deskripsi dari
+            // EducationContent, tujuan klik = halaman Edukasi untuk bahaya itu.
+            AddHazard(pageHost, 0, 0, FrmAssessment.hazardNames[0], "\U0001F30A", "\u2248",
+                Color.FromArgb(112, 132, 146), Color.FromArgb(60, 78, 92), "banjir");
 
-            AddHazard(pageHost, 1, C3 + Gap, "Cuaca Ekstrem",
-                "Angin puting beliung, petir lebat, hujan es, dan badai tropis di pemukiman.",
-                "Prosedur pelindung", "\u26C8", "\u2602",
-                Color.FromArgb(92, 80, 120), Color.FromArgb(34, 30, 56), "cuaca",
-                "Membuka prosedur pelindung cuaca ekstrem.");
+            AddHazard(pageHost, 1, C3 + Gap, FrmAssessment.hazardNames[1], "\u26C8", "\u2602",
+                Color.FromArgb(92, 80, 120), Color.FromArgb(34, 30, 56), "cuaca");
 
-            AddHazard(pageHost, 2, 2 * (C3 + Gap), "Suhu Panas Ekstrem",
-                "Gelombang panas terik, ancaman dehidrasi, heat stroke, dan perlindungan termal.",
-                "Tips hidrasi & rumah sejuk", "\u2600", "\u2600",
-                Color.FromArgb(120, 180, 235), Color.FromArgb(70, 120, 175), "panas",
-                "Membuka tips hidrasi & rumah sejuk.");
+            AddHazard(pageHost, 2, 2 * (C3 + Gap), FrmAssessment.hazardNames[2], "\u2600", "\u2600",
+                Color.FromArgb(120, 180, 235), Color.FromArgb(70, 120, 175), "panas");
         }
 
-        private void AddHazard(Panel pageHost, int index, int x, string title, string description,
-                               string link, string emoji, string badgeGlyph, Color top, Color bottom,
-                               string assetName, string message)
+        private void AddHazard(Panel pageHost, int index, int x, string hazardName,
+                               string emoji, string badgeGlyph, Color top, Color bottom,
+                               string assetName)
         {
             RoundPanel card = Card(pageHost, x, 1059, C3, 274, 16, Color.White, line);
             card.ClipRegion = true;
@@ -1808,17 +1792,126 @@ namespace ClimateSafe
             card.Controls.Add(pic);
             Stretch(pic, card, 1, 1);
 
-            AddText(card, title, 16, 143, 300, 22, 10.5f, true, ink);
-            AddText(card, description, 16, 171, 285, 40, 9f, false, muted);
+            AddText(card, hazardName, 16, 143, 300, 22, 10.5f, true, ink);
+
+            List<string> summaryLines = HazardSummaryLines(hazardName, 285);
+            for (int i = 0; i < summaryLines.Count; i++)
+            {
+                AddText(card, summaryLines[i], 16, 171 + i * 20, 285, 20, 9f, false, muted);
+            }
 
             Stretch(Divider(card, 16, 229, C3 - 32), card, 16, 16);
 
-            AddAligned(card, link, 16, 241, 250, 20, 8.5f, true, navy, ContentAlignment.MiddleLeft);
+            AddAligned(card, "Baca selengkapnya", 16, 241, 250, 20, 8.5f, true, navy,
+                ContentAlignment.MiddleLeft);
             Chevron chev = AddChevron(card, C3 - 16 - 16, 243, navy);
             chev.BringToFront();
             PinRight(chev, card, 16);
 
-            MakeClickable(card, delegate (object sender, EventArgs e) { Info(message); });
+            string captured = hazardName;
+            MakeClickable(card, delegate (object sender, EventArgs e)
+            {
+                Nav.ShowEdukasi(this, captured);
+            });
+            AddCardHover(card, Color.White, Color.FromArgb(250, 252, 255));
+        }
+
+        // Latar kartu berubah saat kursor berada di atasnya, mengikuti warna hover baris
+        // daftar di layar lain.
+        private void AddCardHover(RoundPanel card, Color normal, Color hover)
+        {
+            EventHandler apply = delegate (object sender, EventArgs e)
+            {
+                bool over = card.ClientRectangle.Contains(card.PointToClient(Cursor.Position));
+                card.Fill = over ? hover : normal;
+                card.Invalidate();
+            };
+            HookHover(card, apply);
+        }
+
+        private void HookHover(Control c, EventHandler apply)
+        {
+            c.MouseEnter += apply;
+            c.MouseLeave += apply;
+            foreach (Control child in c.Controls)
+            {
+                HookHover(child, apply);
+            }
+        }
+
+        // Deskripsi kartu bahaya: kalimat pertama dari paragraf pertama materi Edukasi,
+        // maksimal 2 baris dan dipotong di batas kata.
+        private static List<string> HazardSummaryLines(string hazardName, int maxWidth)
+        {
+            string sentence = FirstSentence(EducationContent.GetSummary(hazardName));
+            if (sentence.Length == 0)
+            {
+                return new List<string> { "Belum ada materi" };
+            }
+
+            using (Font f = UI.Body(9f, FontStyle.Regular))
+            {
+                List<string> lines = WrapText(sentence, f, maxWidth);
+                if (lines.Count <= 2) return lines;
+
+                List<string> result = new List<string> { lines[0], Ellipsize(lines[1], f, maxWidth) };
+                return result;
+            }
+        }
+
+        private static string FirstSentence(string? summary)
+        {
+            if (string.IsNullOrWhiteSpace(summary)) return "";
+
+            string[] rawLines = summary.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+            foreach (string raw in rawLines)
+            {
+                string paragraph = raw.Trim();
+                if (paragraph.Length == 0) continue;
+                if (paragraph.StartsWith("- ", StringComparison.Ordinal)) continue;
+
+                int stop = paragraph.IndexOf(". ", StringComparison.Ordinal);
+                return stop >= 0 ? paragraph.Substring(0, stop + 1) : paragraph;
+            }
+            return "";
+        }
+
+        private static string Ellipsize(string text, Font font, int maxWidth)
+        {
+            string value = text.TrimEnd();
+            while (value.Length > 0 &&
+                   TextRenderer.MeasureText(value + "...", font).Width > maxWidth)
+            {
+                int space = value.LastIndexOf(' ');
+                if (space <= 0) break;
+                value = value.Substring(0, space).TrimEnd();
+            }
+            return value + "...";
+        }
+
+        // Lebar diukur seperti Label menggambar (padding bawaan TextRenderer).
+        private static List<string> WrapText(string text, Font font, int maxWidth)
+        {
+            List<string> lines = new List<string>();
+            if (string.IsNullOrEmpty(text)) return lines;
+
+            string[] words = text.Split(' ');
+            string cur = "";
+            foreach (string word in words)
+            {
+                string test = cur.Length == 0 ? word : cur + " " + word;
+                if (TextRenderer.MeasureText(test, font).Width > maxWidth && cur.Length > 0)
+                {
+                    lines.Add(cur);
+                    cur = word;
+                }
+                else
+                {
+                    cur = test;
+                }
+            }
+            if (cur.Length > 0) lines.Add(cur);
+            return lines;
         }
 
         private void BuildFooter(Panel pageHost)

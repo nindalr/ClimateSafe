@@ -832,7 +832,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 138;
+            bottom.Height = 89;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -842,20 +842,8 @@ namespace ClimateSafe
             topLine.BackColor = line;
             bottom.Controls.Add(topLine);
 
-            Label settingsIcon = AddSymbol(bottom, "⚙", 24, 24, 24, 24, 12f, muted);
-            Label settingsText = AddAligned(bottom, "Pengaturan", 56, 24, 150, 22, 10f, false,
-                muted, ContentAlignment.MiddleLeft);
-            EventHandler openSettings = delegate (object sender, EventArgs e)
-            {
-                Info("Menu Pengaturan dibuka.");
-            };
-            settingsIcon.Cursor = Cursors.Hand;
-            settingsIcon.Click += openSettings;
-            settingsText.Cursor = Cursors.Hand;
-            settingsText.Click += openSettings;
-
             FocusCard user = new FocusCard();
-            user.Bounds = new Rectangle(16, 65, 223, 57);
+            user.Bounds = new Rectangle(16, 16, 223, 57);
             user.Radius = 12;
             user.Fill = Color.White;
             user.BorderColor = line;
