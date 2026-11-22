@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -6,6 +6,15 @@ using System.Windows.Forms;
 
 namespace ClimateSafe
 {
+    // Satu sistem tombol untuk seluruh layar admin.
+    internal enum AdminButtonKind
+    {
+        Primary,
+        Secondary,
+        Danger,
+        Quiet
+    }
+
     // Palet, ukuran, dan helper khusus layar admin. Hanya dipakai Forms/Admin/*;
     // form sisi pengguna tidak memakai kelas ini dan tidak diubah.
     internal static class AdminUi
@@ -119,6 +128,13 @@ namespace ClimateSafe
             }
         }
 
+        // Jarak kiri yang ditambahkan TextRenderer saat Label menggambar teks. Dipakai
+        // untuk menyamakan tepi kiri teks dengan tepi kiri kontrol di dekatnya.
+        public static int TextPad(float size, FontStyle style)
+        {
+            return (LabelWidth("Ag", size, style) - DrawnWidth("Ag", size, style)) / 2;
+        }
+
         public static List<string> WrapLines(string text, Font font, int maxWidth)
         {
             List<string> lines = new List<string>();
@@ -171,6 +187,39 @@ namespace ClimateSafe
             b.Bounds = new Rectangle(x, y, DrawnWidth(text, size, FontStyle.Bold) + padding, h);
             parent.Controls.Add(b);
             return b;
+        }
+
+        // Tombol dengan gaya baku sistem admin.
+        public static PillButton MakeButton(Control parent, string text, int x, int y, int h,
+                                            AdminButtonKind kind, float size, int padding,
+                                            bool enabled = true)
+        {
+            PillButton b = MakeButton(parent, text, x, y, h, Color.White, Color.White, Navy,
+                Color.Empty, size, padding);
+            StyleButton(b, kind, enabled);
+            return b;
+        }
+
+        // Warna satu-satunya sumber untuk tiap jenis tombol admin.
+        public static void StyleButton(PillButton button, AdminButtonKind kind, bool enabled)
+        {
+            switch (kind)
+            {
+                case AdminButtonKind.Primary:
+                    SetEnabled(button, enabled, BtnBlue, BtnBlueHover, Color.White, Color.Empty);
+                    break;
+                case AdminButtonKind.Secondary:
+                    SetEnabled(button, enabled, Color.White, IconBlue, Navy, Navy);
+                    break;
+                case AdminButtonKind.Danger:
+                    SetEnabled(button, enabled, Color.White, DangerBg, DangerInk, DangerInk);
+                    break;
+                default:
+                    // Quiet: tanpa isi sendiri, mengikuti latar induk.
+                    SetEnabled(button, enabled, Color.Transparent, HoverBg, SubInk, Color.Empty);
+                    break;
+            }
+            button.FocusColor = kind == AdminButtonKind.Primary ? Color.White : Navy;
         }
 
         // Tombol utama/sekunder yang bisa dinonaktifkan tanpa menulis warna di halaman.
@@ -326,7 +375,7 @@ namespace ClimateSafe
             };
 
             PillButton cancel = AdminUi.MakeButton(this, "Batal", 0, buttonsTop, 40,
-                Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 40);
+                AdminButtonKind.Secondary, 10f, 40);
             cancel.Left = action.Left - 12 - cancel.Width;
             cancel.Click += delegate (object? s, EventArgs e)
             {

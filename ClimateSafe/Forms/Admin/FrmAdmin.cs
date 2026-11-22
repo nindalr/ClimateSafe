@@ -120,6 +120,8 @@ namespace ClimateSafe
                 return;
             }
 
+            // Halaman baru selalu mulai dari atas, juga saat halaman lama sedang di-scroll.
+            contentScroll.AutoScrollPosition = new Point(0, 0);
             contentScroll.SuspendLayout();
             try
             {
@@ -151,6 +153,7 @@ namespace ClimateSafe
                 page.Top = AdminUi.PagePad;
                 page.Left = AdminUi.PagePad;
                 contentScroll.Controls.Add(page);
+                page.Top = AdminUi.PagePad;
                 currentPage = page;
             }
             finally
