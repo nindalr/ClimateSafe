@@ -2,6 +2,21 @@
 
 API menggunakan .NET 10 dan PostgreSQL.
 
+## Railway
+
+Dockerfile di root membangun API dan `ClimateSafe.Core` menggunakan multi-stage
+build, lalu menjalankan API pada HTTP port 8080. Atur port publik service Railway
+ke 8080 (`PORT=8080`) dan berikan connection string database melalui variabel
+`ConnectionStrings__ClimateSafe`; password dapat diberikan melalui `PGPASSWORD`.
+Jangan simpan kredensial dalam image atau repository. Database Supabase tetap
+memerlukan migrasi 000 sampai 007 yang dijalankan terpisah.
+
+Untuk koneksi Supabase gunakan SSL dengan verifikasi identitas server. Jika root
+CA tidak dipercaya oleh container, sediakan sertifikat CA yang benar di lingkungan
+service dan atur `Root Certificate`; path sertifikat Windows di komputer lokal
+tidak berlaku di container Linux. Uji `/health` untuk proses API dan `/api/hazards`
+untuk akses database. Konfigurasi produksi dan sertifikat harus diuji pada Railway.
+
 Perhitungan skor dan prioritas menggunakan `ClimateSafe.Core`, yang juga
 direferensikan aplikasi desktop. Katalog guest bawaan versi `initial-001` berasal
 dari data awal migrasi 001, 004, dan 005. Katalog API online tetap dibaca dari
