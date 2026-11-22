@@ -30,7 +30,7 @@ namespace ClimateSafe
         public static string Page { get { return Pick("\uE7C3", "\u25A4"); } }
         public static string Report { get { return Pick("\uE9D9", "\u21BA"); } }
         public static string List { get { return Pick("\uE8FD", "\u2630"); } }
-        public static string Rain { get { return Pick("\uE9CA", "\u2248"); } }
+        public static string Rain { get { return Pick("\uEB42", "\u2248"); } }
         public static string Storm { get { return Pick("\uE945", "\u2602"); } }
         public static string Sun { get { return Pick("\uE706", "\u2600"); } }
         public static string Tools { get { return Pick("\uE90F", "\u2692"); } }
@@ -480,13 +480,13 @@ namespace ClimateSafe
             }
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            Rectangle badge = new Rectangle(12, Height - BadgeSize - 12, BadgeSize, BadgeSize);
-            using (SolidBrush wb = new SolidBrush(Color.White))
-            {
-                g.FillEllipse(wb, badge);
-            }
             if (!string.IsNullOrEmpty(BadgeGlyph))
             {
+                Rectangle badge = new Rectangle(12, Height - BadgeSize - 12, BadgeSize, BadgeSize);
+                using (SolidBrush wb = new SolidBrush(Color.White))
+                {
+                    g.FillEllipse(wb, badge);
+                }
                 using (Font bf = UI.MakeFont(UI.IconFontName, BadgeFontSize, FontStyle.Regular))
                 {
                     TextRenderer.DrawText(g, BadgeGlyph, bf, badge, BadgeColor,
@@ -1247,6 +1247,24 @@ namespace ClimateSafe
         }
 
         // Lebar teks seperti Label menggambar (padding bawaan TextRenderer).
+        // Selisih tepi label dan tepi teks yang digambar GDI, supaya jarak antarlabel
+        // benar-benar sebesar yang diminta.
+        private static int GlyphPad(Font font)
+        {
+            return (TextRenderer.MeasureText("Ag", font).Width -
+                    TextRenderer.MeasureText("Ag", font, new Size(int.MaxValue, int.MaxValue),
+                        TextFormatFlags.NoPadding).Width) / 2;
+        }
+
+        // Jarak tepi atas label (teks rata tengah vertikal) ke garis dasar teks.
+        private static int BaselineOffset(Font font, int height)
+        {
+            FontFamily family = font.FontFamily;
+            float textH = font.GetHeight();
+            float ascent = textH * family.GetCellAscent(font.Style) / family.GetLineSpacing(font.Style);
+            return (int)Math.Round((height - textH) / 2f + ascent);
+        }
+
         private static int LabelWidth(string text, float size, FontStyle style)
         {
             using (Font f = UI.Body(size, style))
@@ -1425,8 +1443,10 @@ namespace ClimateSafe
             }
             else
             {
-                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                int badgeW = LabelWidth(Session.RoleText, 9.75f, FontStyle.Regular) + 16;
+                RoundPanel badge = Card(user, 55, 29, badgeW, 20, 6,
+                    Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, badgeW, 20, 9.75f, false, navy,
                     ContentAlignment.MiddleCenter);
             }
 
@@ -1499,11 +1519,11 @@ namespace ClimateSafe
 
             Color pillBorder = Color.FromArgb(226, 232, 240);
 
-            int dateW = 34 + LabelWidth(tanggal, 8.5f, FontStyle.Regular) + 12;
+            int dateW = 34 + LabelWidth(tanggal, 9.75f, FontStyle.Regular) + 12;
             RoundPanel dateCard = Card(dashHeader, PageMaxW - 30 - 147 - 12 - dateW, 64, dateW, 32, 16,
                 Color.White, pillBorder);
             AddSymbol(dateCard, Ico.Calendar, 10, 0, 20, 32, 10f, muted);
-            AddAligned(dateCard, tanggal, 34, 0, dateW - 46, 32, 8.5f, false, ink,
+            AddAligned(dateCard, tanggal, 34, 0, dateW - 46, 32, 9.75f, false, ink,
                 ContentAlignment.MiddleLeft);
 
             RoundPanel weatherCard = Card(dashHeader, PageMaxW - 30 - 147, 64, 147, 32, 16,
@@ -1512,7 +1532,7 @@ namespace ClimateSafe
             // tetap memakai Segoe UI Symbol, bukan font ikon aplikasi.
             weatherIcon = NewLabel(weatherCard, "?", 10, 0, 20, 32, 10f, FontStyle.Regular,
                 Color.FromArgb(240, 170, 40), ContentAlignment.MiddleCenter, "Segoe UI Symbol");
-            weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 8.5f, false, ink,
+            weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 9.75f, false, ink,
                 ContentAlignment.MiddleLeft);
             weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", PageMaxW - 30 - 147, 98,
                 147, 18, 7f, false, muted, ContentAlignment.MiddleCenter);
@@ -1607,31 +1627,41 @@ namespace ClimateSafe
             cardScore = card;
 
             AddText(card, "Skor Kesiapan Terakhir", 20, 22, 280, 30, 10.5f, true, ink);
-            AddText(card, latestSession?.HazardName ?? "", 20, 52, 280, 18, 8.5f, false, muted);
+            AddText(card, latestSession?.HazardName ?? "", 20, 52, 280, 18, 9.75f, false, muted);
 
             string scoreText = latestSession == null ? "\u2014" : ScoreText(latestSession.OverallScore);
             Label scoreBig = AddAligned(card, scoreText, 20, 82, 120, 56, 30f, true, ink,
                 ContentAlignment.MiddleLeft);
             scoreBig.AutoSize = true;
-            int scoreW = scoreBig.PreferredWidth;
-            AddAligned(card, "/100", 20 + scoreW + 14, 102, 70, 38, 12f, false, muted,
-                ContentAlignment.MiddleLeft);
+
+            // "/100" berjarak 8 px dari tepi kanan angka dan sebaris dasar dengannya; lebar
+            // angka diukur dengan TextRenderer supaya tepat untuk semua skor 0-100.
+            using (Font scoreFont = UI.Body(30f, FontStyle.Bold))
+            using (Font maxFont = UI.Body(12f, FontStyle.Regular))
+            {
+                int textW = TextRenderer.MeasureText(scoreText, scoreFont,
+                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                int maxX = 20 + GlyphPad(scoreFont) + textW + 8 - GlyphPad(maxFont);
+                int baseline = scoreBig.Top + BaselineOffset(scoreFont, scoreBig.Height);
+                AddAligned(card, "/100", maxX, baseline - BaselineOffset(maxFont, 38), 70, 38,
+                    12f, false, muted, ContentAlignment.MiddleLeft);
+            }
 
             // Gaya pil level sama dengan FrmHasilAsesmen.
             string levelText = latestSession?.Level ?? "Belum ada asesmen";
             bool notReady = string.Equals(levelText, ScoringRules.NotReadyLevel,
                 StringComparison.OrdinalIgnoreCase);
-            int pillW = LabelWidth(levelText, 8.5f, FontStyle.Bold) + 28;
+            int pillW = LabelWidth(levelText, 9.75f, FontStyle.Bold) + 28;
             RoundPanel pill = Card(card, 20, 152, pillW, 28, 14,
                 notReady ? coralSoft : pillBlueBg, Color.Empty);
-            AddAligned(pill, levelText, 0, 0, pillW, 28, 8.5f, true,
+            AddAligned(pill, levelText, 0, 0, pillW, 28, 9.75f, true,
                 notReady ? coralInk : pillBlueInk, ContentAlignment.MiddleCenter);
 
             Stretch(Divider(card, 20, 206, C3 - 40), card, 20, 20);
-            AddText(card, "Terakhir diperbarui:", 20, 218, 150, 18, 8.5f, false, muted);
+            AddText(card, "Terakhir diperbarui:", 20, 218, 150, 18, 9.75f, false, muted);
             Label date = AddAligned(card,
                 latestSession?.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") ?? "\u2014",
-                C3 - 20 - 141, 218, 141, 18, 8.5f, false, ink, ContentAlignment.TopRight);
+                C3 - 20 - 141, 218, 141, 18, 9.75f, false, ink, ContentAlignment.TopRight);
             PinRight(date, card, 20);
         }
 
@@ -1683,11 +1713,11 @@ namespace ClimateSafe
 
             IconBox(card, Ico.CheckBox, 20, 23, 28, iconBlue, navy);
             AddText(card, "Progress Checklist Persiapan", 62, 23, 360, 30, 10.5f, true, ink);
-            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 8.5f,
+            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 9.75f,
                 false, muted);
 
-            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", cw - 22 - 125, 28, 125, 20, 8.5f,
-                false, coral, ContentAlignment.TopRight);
+            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", cw - 22 - 125, 28, 125, 20, 9.75f,
+                false, Theme.CtaFill, ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
             {
@@ -1695,8 +1725,13 @@ namespace ClimateSafe
             };
             PinRight(seeAll, card, 22);
 
+            // Blok lingkaran progres + teks dipusatkan vertikal pada ruang di bawah judul.
+            const int blockTop = 79;    // tepi bawah subjudul kartu
+            const int blockH = 100;     // tinggi lingkaran progres
+            int blockY = blockTop + (RowBottomH - blockTop - blockH) / 2;
+
             CircleProgress cp = new CircleProgress();
-            cp.Bounds = new Rectangle(55, 168, 100, 100);
+            cp.Bounds = new Rectangle(55, blockY, 100, 100);
             cp.Percent = latestSession == null ? 0 : (int)Math.Round(latestSession.Progress);
             cp.MainText = (latestSession?.CompletedCount ?? 0) + "/" + (latestSession?.Items.Count ?? 0);
             cp.SubText = "SELESAI";
@@ -1707,7 +1742,7 @@ namespace ClimateSafe
             card.Controls.Add(cp);
 
             Label hazardTitle = AddText(card, latestSession?.HazardName ?? "Belum ada asesmen",
-                213, 176, 380, 28, 12, true, ink);
+                213, blockY + 8, 380, 28, 12, true, ink);
             Stretch(hazardTitle, card, 213, 20);
 
             Label checklistHint = AddText(card, latestSession == null
@@ -1715,7 +1750,7 @@ namespace ClimateSafe
                 : latestSession.Items.Count == 0
                     ? "Tidak ada tindakan yang dihasilkan untuk sesi ini."
                     : "Buka checklist untuk menandai tindakan yang sudah dikerjakan.",
-                213, 210, 370, 65, 9, false, muted);
+                213, blockY + 42, 370, 65, 9.75f, false, muted);
             Stretch(checklistHint, card, 213, 20);
         }
 
@@ -1731,7 +1766,7 @@ namespace ClimateSafe
 
             string prioritySubtitle = "Dari hasil asesmen terakhir, yang perlu kamu perhatikan.";
             AddText(card, prioritySubtitle, 64, 55,
-                LabelWidth(prioritySubtitle, 8.5f, FontStyle.Regular), 18, 8.5f, false, muted);
+                LabelWidth(prioritySubtitle, 9.75f, FontStyle.Regular), 18, 9.75f, false, muted);
 
             Stretch(Divider(card, 20, 88, pw - 40), card, 20, 20);
 
@@ -1745,8 +1780,8 @@ namespace ClimateSafe
 
             Stretch(Divider(card, 20, 398, pw - 40), card, 20, 20);
 
-            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", pw - 20 - 125, 408, 125, 18, 8.5f,
-                false, coral, ContentAlignment.TopRight);
+            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", pw - 20 - 125, 408, 125, 18, 9.75f,
+                false, Theme.CtaFill, ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
             {
@@ -1761,12 +1796,14 @@ namespace ClimateSafe
                 Color.FromArgb(254, 240, 236), Color.Empty, 0f, Color.FromArgb(249, 214, 206));
             Stretch(box, parent, 20, 20);
 
-            RoundPanel badge = Card(box, 16, 20, 24, 24, 12, coral, Color.Empty);
-            AddAligned(badge, number, 0, 0, 24, 24, 8.5f, true, Color.White, ContentAlignment.MiddleCenter);
+            // Isi coral CTA: kontras teks putih 4,87:1.
+            RoundPanel badge = Card(box, 16, 20, 24, 24, 12, Theme.CtaFill, Color.Empty);
+            AddAligned(badge, number, 0, 0, 24, 24, 9.75f, true, Color.White,
+                ContentAlignment.MiddleCenter);
 
             // Nama dimensi tidak ada pada data checklist yang dimuat Beranda, jadi teks
             // tindakan menjadi isi utama item.
-            Label text = AddText(box, description, 57, 18, 270, 52, 9f, false, ink);
+            Label text = AddText(box, description, 57, 18, 270, 52, 9.75f, false, ink);
             Stretch(text, box, 57, 16);
         }
 
@@ -1775,7 +1812,7 @@ namespace ClimateSafe
             IconBox(pageHost, Ico.Library, 0, HazardTitleY + 1, 28, iconBlue, navy);
             AddText(pageHost, "Informasi Bahaya Iklim", 41, HazardTitleY, 400, 24, 12f, true, titleBlue);
             AddText(pageHost, "Kenali jenis bahaya iklim dan langkah mitigasi terbaik.",
-                41, HazardTitleY + 25, 450, 18, 8.5f, false, muted);
+                41, HazardTitleY + 25, 450, 18, 9.75f, false, muted);
 
             // Nama bahaya dari satu sumber (FrmAssessment.hazardNames), deskripsi dari
             // materi Edukasi lewat API (EducationSummary), tujuan klik = halaman Edukasi.
@@ -1785,7 +1822,8 @@ namespace ClimateSafe
             AddHazard(pageHost, 1, C3 + Gap, FrmAssessment.hazardNames[1], "\u26C8", Ico.Storm,
                 Color.FromArgb(92, 80, 120), Color.FromArgb(34, 30, 56), "cuaca");
 
-            AddHazard(pageHost, 2, 2 * (C3 + Gap), FrmAssessment.hazardNames[2], "\u2600", Ico.Sun,
+            // Tanpa ikon kecil: lencana matahari hanya mengulang ikon besar pada kartu ini.
+            AddHazard(pageHost, 2, 2 * (C3 + Gap), FrmAssessment.hazardNames[2], "\u2600", "",
                 Color.FromArgb(120, 180, 235), Color.FromArgb(70, 120, 175), "panas");
         }
 
@@ -1815,12 +1853,12 @@ namespace ClimateSafe
 
             for (int i = 0; i < 2; i++)
             {
-                hazardSummary[index, i] = AddText(card, "", 16, 124 + i * 20, 285, 20, 9f, false, muted);
+                hazardSummary[index, i] = AddText(card, "", 16, 124 + i * 20, 285, 20, 9.75f, false, muted);
             }
 
             Stretch(Divider(card, 16, 182, C3 - 32), card, 16, 16);
 
-            AddAligned(card, "Baca selengkapnya", 16, 194, 250, 20, 8.5f, true, navy,
+            AddAligned(card, "Baca selengkapnya", 16, 194, 250, 20, 9.75f, true, navy,
                 ContentAlignment.MiddleLeft);
             Chevron chev = AddChevron(card, C3 - 16 - 16, 196, navy);
             chev.BringToFront();
@@ -1899,7 +1937,7 @@ namespace ClimateSafe
         {
             if (sentence.Length == 0) return new List<string>();
 
-            using (Font f = UI.Body(9f, FontStyle.Regular))
+            using (Font f = UI.Body(9.75f, FontStyle.Regular))
             {
                 List<string> lines = WrapText(sentence, f, maxWidth);
                 if (lines.Count <= 2) return lines;
