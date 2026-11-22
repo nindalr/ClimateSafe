@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace ClimateSafe
 {
@@ -38,6 +38,11 @@ namespace ClimateSafe
         public static readonly Color PillBlueInk = Color.FromArgb(47, 95, 148);
         public static readonly Color ReadOnlyBg = Color.FromArgb(244, 247, 252);
         public static readonly Color StepIdle = Color.FromArgb(240, 244, 250);
+
+        // Tombol aksi utama (CTA). Coral lama tetap untuk menu aktif, lencana, dan angka.
+        public static readonly Color CtaFill = Color.FromArgb(192, 75, 58);
+        public static readonly Color CtaHover = Color.FromArgb(172, 62, 47);
+        public static readonly Color CtaPressed = Color.FromArgb(150, 52, 40);
 
         public const int SidebarWidth = 256;
     }

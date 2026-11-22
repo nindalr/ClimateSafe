@@ -146,7 +146,14 @@ namespace ClimateSafe
         private BufferedPanel pbScroll;
         private BufferedPanel pbPage;
         private RoundPanel hazardCard;
+        private const int ActionBarH = 112;
+        private const int PageContentH = 670;
+
         private Label hintLabel;
+        private Label hintName;
+        private BufferedPanel pbActionHost;
+        private RoundPanel pbActionCard;
+        private PillButton pbNext;
         private Font descFont;
 
         private Label sidebarName;
@@ -223,19 +230,35 @@ namespace ClimateSafe
             sidebar.Margin = Padding.Empty;
             root.Controls.Add(sidebar, 0, 0);
 
+            BufferedPanel content = new BufferedPanel();
+            content.Dock = DockStyle.Fill;
+            content.BackColor = bg;
+            content.Margin = Padding.Empty;
+            root.Controls.Add(content, 1, 0);
+
             BufferedPanel sc = new BufferedPanel();
             sc.Dock = DockStyle.Fill;
             sc.AutoScroll = true;
             sc.AutoScrollMargin = new Size(0, 32);
             sc.BackColor = bg;
             sc.Margin = Padding.Empty;
-            root.Controls.Add(sc, 1, 0);
+            content.Controls.Add(sc);
             pbScroll = sc;
+
+            // Bar aksi menempel di dasar area konten, di luar panel yang di-scroll,
+            // supaya tombol Lanjutkan selalu terlihat (termasuk pada 1366x768).
+            BufferedPanel bar = new BufferedPanel();
+            bar.Dock = DockStyle.Bottom;
+            bar.Height = ActionBarH;
+            bar.BackColor = bg;
+            bar.Margin = Padding.Empty;
+            content.Controls.Add(bar);
+            pbActionHost = bar;
 
             BuildSidebar(sidebar);
 
             BufferedPanel pg = new BufferedPanel();
-            pg.Size = new Size(PageMaxW, 798);
+            pg.Size = new Size(PageMaxW, PageContentH);
             pg.Location = new Point(32, 32);
             pg.BackColor = bg;
             sc.Controls.Add(pg);
@@ -246,7 +269,7 @@ namespace ClimateSafe
             BuildHazardPicker(pbPage);
             BuildDimensions(pbPage);
             BuildNote(pbPage);
-            BuildActionBar(pbPage);
+            BuildActionBar(pbActionHost);
 
             pbBuilt = true;
             SelectHazard(0);
@@ -268,6 +291,12 @@ namespace ClimateSafe
 
             pbPage.Left = x + pbScroll.AutoScrollPosition.X;
             pbPage.Width = w;
+
+            if (pbActionCard != null)
+            {
+                pbActionCard.SetBounds(x, pbActionCard.Top, w, pbActionCard.Height);
+                LayoutHint();
+            }
         }
 
         // ---------- isi ----------
@@ -447,20 +476,24 @@ namespace ClimateSafe
 
         private void BuildActionBar(Panel host)
         {
-            RoundPanel card = Card(host, 0, 694, PageMaxW, 72, 14, Color.White, line);
-            Stretch(card, host, 0, 0);
+            RoundPanel card = Card(host, 0, 16, PageMaxW, 72, 14, Color.White, line);
+            pbActionCard = card;
 
-            hintLabel = AddAligned(card, "", 24, 0, PageMaxW - 48 - 200, 72, 9f, false, muted,
+            // Teks pendamping: nama bahaya (tebal) lalu keterangan.
+            hintName = AddAligned(card, "", 24, 0, 160, 72, 9.75f, true, ink,
+                ContentAlignment.MiddleLeft);
+            hintLabel = AddAligned(card, "", 184, 0, 240, 72, 9.75f, false, muted,
                 ContentAlignment.MiddleLeft);
 
             // Lebar tombol: teks diukur seperti kontrol menggambar + padding 24 kiri dan kanan.
             int buttonW = Math.Max(160,
-                LabelWidth("Lanjutkan  →", 10f, FontStyle.Bold) + 48);
+                LabelWidth("Lanjutkan  \u2192", 10f, FontStyle.Bold) + 48);
             PillButton next = new PillButton();
-            next.Text = "Lanjutkan  →";
+            next.Text = "Lanjutkan  \u2192";
             next.Radius = 10;
-            next.Fill = coral;
-            next.HoverFill = coralHover;
+            next.Fill = Theme.CtaFill;
+            next.HoverFill = Theme.CtaHover;
+            next.PressedFill = Theme.CtaPressed;
             next.TextColor = Color.White;
             next.FocusColor = Color.White;
             next.Font = UI.Body(10f, FontStyle.Bold);
@@ -468,15 +501,26 @@ namespace ClimateSafe
             card.Controls.Add(next);
             next.BringToFront();
             PinRight(next, card, 24);
+            pbNext = next;
 
-            // Label status dibatasi lebarnya (dan ikut menyusut saat jendela menyempit)
-            // supaya tidak pernah menutupi tombol yang berjangkar di kanan.
-            hintLabel.Width = Math.Max(120, card.Width - 24 - 24 - buttonW - 24);
-            Stretch(hintLabel, card, 24, 24 + buttonW + 24);
             next.Click += delegate (object sender, EventArgs e)
             {
                 Nav.ShowAssessmentQuestions(this, hazardIdx);
             };
+
+            LayoutHint();
+        }
+
+        // Dua label teks pendamping dibatasi lebarnya supaya tidak pernah
+        // menutupi tombol yang berjangkar di kanan.
+        private void LayoutHint()
+        {
+            if (pbActionCard == null || pbNext == null || hintName == null || hintLabel == null) return;
+
+            int avail = Math.Max(80, pbActionCard.Width - 24 - 24 - pbNext.Width - 24);
+            int nameW = Math.Min(avail, LabelWidth(hintName.Text, 9.75f, FontStyle.Bold) + 6);
+            hintName.SetBounds(24, 0, nameW, pbActionCard.Height);
+            hintLabel.SetBounds(24 + nameW, 0, Math.Max(40, avail - nameW), pbActionCard.Height);
         }
 
         // ---------- pilihan ----------
@@ -516,7 +560,10 @@ namespace ClimateSafe
                 hzRadios[k].Selected = sel;
             }
 
-            hintLabel.Text = FrmAssessment.hazardNames[index] + " dipilih · Siap melanjutkan";
+            hintName.Text = FrmAssessment.hazardNames[index];
+            hintLabel.Text = "dipilih. Lanjutkan untuk menjawab " +
+                FrmAssessment.dimNames.Length + " pertanyaan.";
+            LayoutHint();
 
             if (hadFocus) hzOptions[index].Focus();
         }

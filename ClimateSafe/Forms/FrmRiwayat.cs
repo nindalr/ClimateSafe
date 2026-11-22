@@ -16,9 +16,21 @@ namespace ClimateSafe
         public Color TextColor = Color.Black;
         public Color BorderColor = Color.Empty;
         public Color FocusColor = Color.FromArgb(37, 88, 150);
+        // Kosong = pakai HoverFill yang digelapkan 10%.
+        public Color PressedFill = Color.Empty;
         public int Radius = 8;
 
         private bool hovered;
+        private bool pressed;
+
+        // Dipakai juga oleh RoundButton untuk warna keadaan ditekan.
+        public static Color Darken(Color color, double factor)
+        {
+            return Color.FromArgb(color.A,
+                (int)Math.Round(color.R * (1 - factor)),
+                (int)Math.Round(color.G * (1 - factor)),
+                (int)Math.Round(color.B * (1 - factor)));
+        }
 
         public PillButton()
         {
@@ -44,13 +56,23 @@ namespace ClimateSafe
         {
             base.OnMouseLeave(e);
             hovered = false;
+            pressed = false;
             Invalidate();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            pressed = true;
+            Invalidate();
             Focus();
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            pressed = false;
+            Invalidate();
         }
 
         protected override bool IsInputKey(Keys keyData)
@@ -99,7 +121,10 @@ namespace ClimateSafe
 
             using (GraphicsPath path = UI.RoundPath(rect, Radius))
             {
-                using (SolidBrush b = new SolidBrush(hovered ? HoverFill : Fill))
+                Color face = Fill;
+                if (hovered) face = HoverFill;
+                if (pressed) face = PressedFill != Color.Empty ? PressedFill : Darken(HoverFill, 0.10);
+                using (SolidBrush b = new SolidBrush(face))
                 {
                     g.FillPath(b, path);
                 }

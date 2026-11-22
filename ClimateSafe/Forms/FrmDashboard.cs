@@ -469,8 +469,11 @@ namespace ClimateSafe
         public Color HoverFill = Color.RoyalBlue;
         public Color BorderColor = Color.Empty;
         public Color TextColor = Color.White;
+        // Kosong = pakai HoverFill yang digelapkan 10%.
+        public Color PressedFill = Color.Empty;
         public int Radius = 8;
         private bool hover;
+        private bool pressed;
 
         public RoundButton()
         {
@@ -494,6 +497,21 @@ namespace ClimateSafe
         {
             base.OnMouseLeave(e);
             hover = false;
+            pressed = false;
+            Invalidate();
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            pressed = true;
+            Invalidate();
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            pressed = false;
             Invalidate();
         }
 
@@ -514,7 +532,10 @@ namespace ClimateSafe
 
             using (GraphicsPath path = UI.RoundPath(rect, Radius))
             {
-                using (SolidBrush b = new SolidBrush(hover ? HoverFill : Fill))
+                Color face = Fill;
+                if (hover) face = HoverFill;
+                if (pressed) face = PressedFill != Color.Empty ? PressedFill : PillButton.Darken(HoverFill, 0.10);
+                using (SolidBrush b = new SolidBrush(face))
                 {
                     g.FillPath(b, path);
                 }
@@ -1559,7 +1580,8 @@ namespace ClimateSafe
 
             // Satu aksi utama di layar: gaya tombol utama (coral penuh, teks putih).
             RoundButton start = MakeButton(card, "Mulai Asesmen", 21, 66, rw - 42, 45,
-                coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 10, 10f);
+                Theme.CtaFill, Theme.CtaHover, Color.White, Color.Empty, 10, 10f);
+            start.PressedFill = Theme.CtaPressed;
             Stretch(start, card, 21, 21);
             start.Click += delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); };
 

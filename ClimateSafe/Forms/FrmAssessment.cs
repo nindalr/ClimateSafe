@@ -855,8 +855,8 @@ namespace ClimateSafe
                 : "Pilih satu jawaban untuk melanjutkan";
 
             btnNext.Text = (q == 4 ? "Lihat Hasil  \u2192" : "Lanjutkan  \u2192");
-            btnNext.Fill = hasAnswer ? coral : Color.FromArgb(242, 180, 168);
-            btnNext.HoverFill = hasAnswer ? Color.FromArgb(224, 106, 88) : Color.FromArgb(242, 180, 168);
+            btnNext.Fill = hasAnswer ? Theme.CtaFill : Color.FromArgb(242, 180, 168);
+            btnNext.HoverFill = hasAnswer ? Theme.CtaHover : Color.FromArgb(242, 180, 168);
             btnNext.Invalidate();
 
             btnBack.TextColor = ink;
@@ -883,7 +883,8 @@ namespace ClimateSafe
             };
 
             btnNext = MakeButton(navBar, "Lanjutkan  \u2192", DesignLeftW - 24 - 132, 14, 132, 45,
-                coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 8, 10f);
+                Theme.CtaFill, Theme.CtaHover, Color.White, Color.Empty, 8, 10f);
+            btnNext.PressedFill = Theme.CtaPressed;
             btnNext.Click += delegate (object sender, EventArgs e) { GoNext(); };
             PinRight(btnNext, navBar, 24);
 
