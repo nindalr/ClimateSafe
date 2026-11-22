@@ -1246,23 +1246,13 @@ namespace ClimateSafe
             return (int)((pageWidth - Gap) * (long)ColLeftNum / ColLeftDen);
         }
 
-        // Lebar teks seperti Label menggambar (padding bawaan TextRenderer).
-        // Selisih tepi label dan tepi teks yang digambar GDI, supaya jarak antarlabel
-        // benar-benar sebesar yang diminta.
-        private static int GlyphPad(Font font)
-        {
-            return (TextRenderer.MeasureText("Ag", font).Width -
-                    TextRenderer.MeasureText("Ag", font, new Size(int.MaxValue, int.MaxValue),
-                        TextFormatFlags.NoPadding).Width) / 2;
-        }
-
-        // Jarak tepi atas label (teks rata tengah vertikal) ke garis dasar teks.
-        private static int BaselineOffset(Font font, int height)
+        // Jarak tepi atas kotak teks ke garis dasar, untuk menyejajarkan dua ukuran teks.
+        private static int Ascent(Font font)
         {
             FontFamily family = font.FontFamily;
             float textH = font.GetHeight();
-            float ascent = textH * family.GetCellAscent(font.Style) / family.GetLineSpacing(font.Style);
-            return (int)Math.Round((height - textH) / 2f + ascent);
+            return (int)Math.Round(textH * family.GetCellAscent(font.Style) /
+                                   family.GetLineSpacing(font.Style));
         }
 
         private static int LabelWidth(string text, float size, FontStyle style)
@@ -1629,23 +1619,27 @@ namespace ClimateSafe
             AddText(card, "Skor Kesiapan Terakhir", 20, 22, 280, 30, 10.5f, true, ink);
             AddText(card, latestSession?.HazardName ?? "", 20, 52, 280, 18, 9.75f, false, muted);
 
+            // Angka skor dan "/100" digambar langsung pada kartu, bukan lewat Label: tepi
+            // kiri kotak label memotong kaki garis miring "/" sehingga terbaca seperti tanda
+            // petik. Dengan TextRenderer + NoPadding, "/100" berjarak tepat 8 px dari tepi
+            // kanan teks angka dan sebaris dasar dengannya untuk skor 1-3 digit.
             string scoreText = latestSession == null ? "\u2014" : ScoreText(latestSession.OverallScore);
-            Label scoreBig = AddAligned(card, scoreText, 20, 82, 120, 56, 30f, true, ink,
-                ContentAlignment.MiddleLeft);
-            scoreBig.AutoSize = true;
-
-            // "/100" berjarak 8 px dari tepi kanan angka dan sebaris dasar dengannya; lebar
-            // angka diukur dengan TextRenderer supaya tepat untuk semua skor 0-100.
-            using (Font scoreFont = UI.Body(30f, FontStyle.Bold))
-            using (Font maxFont = UI.Body(12f, FontStyle.Regular))
+            card.Decorate = delegate (Graphics g, Rectangle bounds)
             {
-                int textW = TextRenderer.MeasureText(scoreText, scoreFont,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
-                int maxX = 20 + GlyphPad(scoreFont) + textW + 8 - GlyphPad(maxFont);
-                int baseline = scoreBig.Top + BaselineOffset(scoreFont, scoreBig.Height);
-                AddAligned(card, "/100", maxX, baseline - BaselineOffset(maxFont, 38), 70, 38,
-                    12f, false, muted, ContentAlignment.MiddleLeft);
-            }
+                using (Font scoreFont = UI.Body(30f, FontStyle.Bold))
+                using (Font maxFont = UI.Body(12f, FontStyle.Regular))
+                {
+                    Size numSize = TextRenderer.MeasureText(g, scoreText, scoreFont,
+                        new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
+                    int numTop = 82 + (56 - numSize.Height) / 2;
+                    int maxTop = numTop + Ascent(scoreFont) - Ascent(maxFont);
+
+                    TextRenderer.DrawText(g, scoreText, scoreFont, new Point(20, numTop), ink,
+                        TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, "/100", maxFont,
+                        new Point(20 + numSize.Width + 8, maxTop), muted, TextFormatFlags.NoPadding);
+                }
+            };
 
             // Gaya pil level sama dengan FrmHasilAsesmen.
             string levelText = latestSession?.Level ?? "Belum ada asesmen";
@@ -1761,7 +1755,13 @@ namespace ClimateSafe
             RoundPanel card = Card(pageHost, cw + Gap, RowBottomY, pw, RowBottomH, 16, Color.White, line);
             cardPriority = card;
 
-            IconBox(card, Ico.Warning, 20, 31, 28, coralSoft, coral);
+            // Kotak ikon dipusatkan vertikal pada blok judul (23..53) + subjudul (55..73),
+            // dan glyph-nya digambar tepat di tengah kotak.
+            RoundPanel warnBox = Card(card, 20, (23 + 73 - 28) / 2, 28, 28, 8, coralSoft, Color.Empty);
+            warnBox.Decorate = delegate (Graphics g, Rectangle bounds)
+            {
+                DrawCentered(g, Ico.Warning, UI.IconFontName, 10.5f, FontStyle.Regular, coral, 28, 28);
+            };
             AddText(card, "Prioritas Utama", 64, 23, 300, 30, 10.5f, true, ink);
 
             string prioritySubtitle = "Dari hasil asesmen terakhir, yang perlu kamu perhatikan.";
@@ -1792,19 +1792,51 @@ namespace ClimateSafe
 
         private void AddPriority(RoundPanel parent, int y, string number, string description)
         {
-            RoundPanel box = NewCard(parent, 20, y, parent.Width - 40, 84, 10,
+            const int boxH = 84;
+            RoundPanel box = NewCard(parent, 20, y, parent.Width - 40, boxH, 10,
                 Color.FromArgb(254, 240, 236), Color.Empty, 0f, Color.FromArgb(249, 214, 206));
             Stretch(box, parent, 20, 20);
 
-            // Isi coral CTA: kontras teks putih 4,87:1.
-            RoundPanel badge = Card(box, 16, 20, 24, 24, 12, Theme.CtaFill, Color.Empty);
-            AddAligned(badge, number, 0, 0, 24, 24, 9.75f, true, Color.White,
-                ContentAlignment.MiddleCenter);
+            // Isi coral CTA: kontras teks putih 4,87:1. Angkanya digambar sendiri supaya
+            // benar-benar berada di tengah lingkaran.
+            RoundPanel badge = Card(box, 16, (boxH - 24) / 2, 24, 24, 12, Theme.CtaFill, Color.Empty);
+            badge.Decorate = delegate (Graphics g, Rectangle bounds)
+            {
+                DrawCentered(g, number, UI.FontName, 9.75f, FontStyle.Bold, Color.White, 24, 24);
+            };
 
             // Nama dimensi tidak ada pada data checklist yang dimuat Beranda, jadi teks
             // tindakan menjadi isi utama item.
-            Label text = AddText(box, description, 57, 18, 270, 52, 9.75f, false, ink);
+            Label text = AddText(box, description, 57, 18, Math.Max(40, box.Width - 57 - 16), 20,
+                9.75f, false, ink);
             Stretch(text, box, 57, 16);
+
+            // Blok teks (satu atau dua baris) dipusatkan vertikal pada tinggi butir, diukur
+            // dengan lebar pembungkus yang sedang dipakai label.
+            EventHandler center = delegate (object sender, EventArgs e)
+            {
+                int h;
+                using (Font f = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    h = TextRenderer.MeasureText(description, f,
+                        new Size(Math.Max(40, text.Width), 0), TextFormatFlags.WordBreak).Height;
+                }
+                text.SetBounds(text.Left, (boxH - h) / 2, text.Width, h);
+            };
+            box.Resize += center;
+            center(box, EventArgs.Empty);
+        }
+
+        // Glyph atau angka pendek digambar tepat di tengah kotaknya.
+        private static void DrawCentered(Graphics g, string text, string fontName, float size,
+                                         FontStyle style, Color color, int w, int h)
+        {
+            using (Font f = UI.MakeFont(fontName, size, style))
+            {
+                TextRenderer.DrawText(g, text, f, new Rectangle(0, 0, w, h), color,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
+                    TextFormatFlags.NoPadding);
+            }
         }
 
         private void BuildHazards(Panel pageHost)
