@@ -538,7 +538,7 @@ namespace ClimateSafe
 
             string level = session == null ? "" : (session.Level ?? "");
             bool notReady = string.Equals(level, NotReadyLevel, StringComparison.OrdinalIgnoreCase);
-            int pillW = Measure(level, 9f, FontStyle.Bold) + 28;
+            int pillW = LabelWidth(level, 9f, FontStyle.Bold) + 28;
             RoundPanel pill = Card(card, w - 24 - pillW, 42, pillW, 28, 14,
                 notReady ? coralSoft : pillBlueBg, Color.Empty);
             AddAligned(pill, level, 0, 0, pillW, 28, 9f, true,
@@ -547,21 +547,25 @@ namespace ClimateSafe
 
             string scoreText = session == null ? "0"
                 : Math.Round(session.OverallScore, MidpointRounding.AwayFromZero).ToString("0");
-            int scoreW = Measure(scoreText, 22f, FontStyle.Bold);
-            int unitW = Measure("/100", 10f, FontStyle.Regular);
-            int groupW = scoreW + 4 + unitW;
+            // LabelWidth (hasil ukur dengan padding) + AutoSize: kotak tidak pernah lebih
+            // sempit dari teks, jadi angka dan "/100" tidak terpotong.
+            int scoreW = LabelWidth(scoreText, 22f, FontStyle.Bold);
+            int unitW = LabelWidth("/100", 10f, FontStyle.Regular);
+            int groupW = scoreW + 8 + unitW;
             int groupRight = w - 24 - pillW - 16;
 
-            int capW = Measure("Skor asesmen", 9f, FontStyle.Regular) + 8;
+            int capW = LabelWidth("Skor asesmen", 9f, FontStyle.Regular) + 8;
             Label caption = AddAligned(card, "Skor asesmen", groupRight - capW, 24, capW, 18, 9f, false,
                 muted, ContentAlignment.MiddleRight);
             PinRight(caption, card, 24 + pillW + 16);
 
-            Label score = AddText(card, scoreText, groupRight - groupW, 40, scoreW + 8, 34, 22f, true, ink);
-            PinRight(score, card, 24 + pillW + 16 + unitW - 4);
+            Label score = AddText(card, scoreText, groupRight - groupW, 40, scoreW, 40, 22f, true, ink);
+            score.AutoSize = true;
+            PinRight(score, card, 24 + pillW + 16 + 8 + unitW);
 
-            Label unit = AddText(card, "/100", groupRight - unitW, 58, unitW + 8, 20, 10f, false, muted);
-            PinRight(unit, card, 24 + pillW + 16 - 8);
+            Label unit = AddText(card, "/100", groupRight - unitW, 58, unitW, 20, 10f, false, muted);
+            unit.AutoSize = true;
+            PinRight(unit, card, 24 + pillW + 16);
         }
 
         private int BuildItems(BufferedPanel host, ChecklistSession? session, int y, int w)
@@ -693,6 +697,15 @@ namespace ClimateSafe
         }
 
         // ---------- helper tampilan ----------
+
+        // Lebar teks seperti Label menggambarnya (dengan padding bawaan TextRenderer).
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style))
+            {
+                return TextRenderer.MeasureText(text, f).Width;
+            }
+        }
 
         private static int Measure(string text, float size, FontStyle style)
         {

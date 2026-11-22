@@ -627,7 +627,7 @@ namespace ClimateSafe
 
             RoundPanel pill = Card(host, PageMaxW - 158, 29, 158, 30, 15, Color.White, line);
             AddSymbol(pill, Ico.Clock, 10, 0, 20, 30, 10f, navy);
-            AddAligned(pill, "Estimasi 3\u20135 menit", 32, 0, 122, 30, 8.5f, false, ink,
+            AddAligned(pill, "Estimasi 3-5 menit", 32, 0, 122, 30, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             PinRight(pill, host, 0);
         }
@@ -875,8 +875,8 @@ namespace ClimateSafe
                 : "Pilih satu jawaban untuk melanjutkan";
 
             btnNext.Text = (q == 4 ? "Lihat Hasil  \u2192" : "Lanjutkan  \u2192");
-            btnNext.Fill = hasAnswer ? Theme.CtaFill : Color.FromArgb(242, 180, 168);
-            btnNext.HoverFill = hasAnswer ? Theme.CtaHover : Color.FromArgb(242, 180, 168);
+            btnNext.Fill = hasAnswer ? Theme.CtaBtnFill : Color.FromArgb(242, 180, 168);
+            btnNext.HoverFill = hasAnswer ? Theme.CtaBtnHover : Color.FromArgb(242, 180, 168);
             btnNext.Invalidate();
 
             btnBack.TextColor = ink;
@@ -903,8 +903,8 @@ namespace ClimateSafe
             };
 
             btnNext = MakeButton(navBar, "Lanjutkan  \u2192", DesignLeftW - 24 - 132, 14, 132, 45,
-                Theme.CtaFill, Theme.CtaHover, Color.White, Color.Empty, 8, 10f);
-            btnNext.PressedFill = Theme.CtaPressed;
+                Theme.CtaBtnFill, Theme.CtaBtnHover, Theme.CtaBtnText, Color.Empty, 8, 10f);
+            btnNext.PressedFill = Theme.CtaBtnPressed;
             btnNext.Click += delegate (object sender, EventArgs e) { GoNext(); };
             PinRight(btnNext, navBar, 24);
 

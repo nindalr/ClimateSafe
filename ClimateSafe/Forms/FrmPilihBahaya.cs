@@ -420,43 +420,53 @@ namespace ClimateSafe
             card.Controls.Add(body);
             Stretch(body, card, 24, 24);
 
-            int colW = Math.Max(120, (body.Width - ColGap * (total - 1)) / total);
-            for (int i = 0; i < total; i++)
+            // Lebar tiap item = kotak ikon 32 + jarak 12 + lebar teks (TextRenderer, NoPadding).
+            // Sisa ruang dibagi rata sebagai jarak antar item, sehingga item pertama mulai di
+            // tepi kiri area isi (sejajar judul) dan item terakhir berhenti tepat di tepi kanan.
+            RoundPanel[] boxes = new RoundPanel[total];
+            Label[] labels = new Label[total];
+            int[] itemW = new int[total];
+
+            using (Font f = UI.Body(9f, FontStyle.Regular))
             {
-                BufferedPanel col = new BufferedPanel();
-                col.Bounds = new Rectangle(i * (colW + ColGap), 0, colW, 40);
-                col.BackColor = Color.White;
-                body.Controls.Add(col);
-
-                RoundPanel ib = Card(col, 0, 4, 32, 32, 8, iconBlue, Color.Empty);
-                AddSymbol(ib, FrmAssessment.dimGlyph[i], 0, 0, 32, 32, 10.5f, navy);
-
-                int textW = Math.Max(60, colW - 44);
-                List<string> lines;
-                using (Font f = UI.Body(9f, FontStyle.Regular))
+                for (int i = 0; i < total; i++)
                 {
-                    lines = WrapLines(FrmAssessment.dimNames[i], f, textW);
+                    int textW = TextRenderer.MeasureText(FrmAssessment.dimNames[i], f,
+                        new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                    itemW[i] = 44 + textW;
+
+                    boxes[i] = Card(body, 0, 4, 32, 32, 8, iconBlue, Color.Empty);
+                    AddSymbol(boxes[i], FrmAssessment.dimGlyph[i], 0, 0, 32, 32, 10.5f, navy);
+
+                    // Lebar label diberi 8 px lebih: ruang gambar Label di luar hasil ukur
+                    // NoPadding, tidak dihitung sebagai bagian item.
+                    labels[i] = AddAligned(body, FrmAssessment.dimNames[i], 0, 0, textW + 8, 40,
+                        9f, false, ink, ContentAlignment.MiddleLeft);
                 }
-                if (lines.Count > 2)
-                {
-                    lines = new List<string> { lines[0], lines[1] };
-                }
-
-                int blockH = Math.Max(1, lines.Count) * 18;
-                int top = (40 - blockH) / 2;
-                for (int k = 0; k < lines.Count; k++)
-                {
-                    AddAligned(col, lines[k], 44, top + k * 18, textW, 18, 9f, false, ink,
-                        ContentAlignment.MiddleLeft);
-                }
-
-                int index = i;
-                body.Resize += delegate (object sender, EventArgs e)
-                {
-                    int cw = Math.Max(120, (body.Width - ColGap * (total - 1)) / total);
-                    col.SetBounds(index * (cw + ColGap), 0, cw, 40);
-                };
             }
+
+            EventHandler spread = delegate (object sender, EventArgs e)
+            {
+                int sum = 0;
+                for (int i = 0; i < total; i++) sum += itemW[i];
+
+                int slots = Math.Max(1, total - 1);
+                // Jarak tidak pernah kurang dari ColGap: lebih baik strip melebar daripada
+                // teks dipotong.
+                int free = Math.Max(ColGap * slots, body.Width - sum);
+                int gap = free / slots;
+                int extra = free - gap * slots;   // sisa pembagian, agar item terakhir pas di tepi
+
+                int x = 0;
+                for (int i = 0; i < total; i++)
+                {
+                    boxes[i].Left = x;
+                    labels[i].Left = x + 44;
+                    x += itemW[i] + gap + (i < extra ? 1 : 0);
+                }
+            };
+            body.Resize += spread;
+            spread(body, EventArgs.Empty);
         }
 
         private void BuildNote(Panel host)
@@ -491,11 +501,11 @@ namespace ClimateSafe
             PillButton next = new PillButton();
             next.Text = "Lanjutkan  \u2192";
             next.Radius = 10;
-            next.Fill = Theme.CtaFill;
-            next.HoverFill = Theme.CtaHover;
-            next.PressedFill = Theme.CtaPressed;
-            next.TextColor = Color.White;
-            next.FocusColor = Color.White;
+            next.Fill = Theme.CtaBtnFill;
+            next.HoverFill = Theme.CtaBtnHover;
+            next.PressedFill = Theme.CtaBtnPressed;
+            next.TextColor = Theme.CtaBtnText;
+            next.FocusColor = Theme.CtaBtnText;
             next.Font = UI.Body(10f, FontStyle.Bold);
             next.Bounds = new Rectangle(PageMaxW - 24 - buttonW, 13, buttonW, 45);
             card.Controls.Add(next);
@@ -925,7 +935,7 @@ namespace ClimateSafe
 
             RoundPanel pill = Card(host, PageMaxW - 158, 29, 158, 30, 15, Color.White, line);
             AddSymbol(pill, Ico.Clock, 10, 0, 20, 30, 10f, navy);
-            AddAligned(pill, "Estimasi 3–5 menit", 32, 0, 122, 30, 8.5f, false, ink,
+            AddAligned(pill, "Estimasi 3-5 menit", 32, 0, 122, 30, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             PinRight(pill, host, 0);
         }

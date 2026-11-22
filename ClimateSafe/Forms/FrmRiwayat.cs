@@ -1299,11 +1299,11 @@ namespace ClimateSafe
             login.Text = "Masuk atau Daftar  \u2192";
             login.Bounds = new Rectangle((w - buttonW) / 2, sy + 24 + 32, buttonW, 44);
             login.Radius = 10;
-            login.Fill = Theme.CtaFill;
-            login.HoverFill = Theme.CtaHover;
-            login.PressedFill = Theme.CtaPressed;
-            login.TextColor = Color.White;
-            login.FocusColor = Color.White;
+            login.Fill = Theme.CtaBtnFill;
+            login.HoverFill = Theme.CtaBtnHover;
+            login.PressedFill = Theme.CtaBtnPressed;
+            login.TextColor = Theme.CtaBtnText;
+            login.FocusColor = Theme.CtaBtnText;
             login.Font = UI.Body(10f, FontStyle.Bold);
             card.Controls.Add(login);
             CenterIn(login, card);
