@@ -938,7 +938,7 @@ namespace ClimateSafe
 
         private const int HeaderH = 159;
         private const int RowTopY = 181;
-        private const int RowTopH = 255;
+        private const int RowTopH = 245;
         private const int RowBottomY = RowTopY + RowTopH + Gap;
         private const int RowBottomH = 443;
         private const int HazardTitleY = RowBottomY + RowBottomH + Gap;
@@ -1626,12 +1626,12 @@ namespace ClimateSafe
             string scoreText = latestSession == null ? "\u2014" : ScoreText(latestSession.OverallScore);
             card.Decorate = delegate (Graphics g, Rectangle bounds)
             {
-                using (Font scoreFont = UI.Body(30f, FontStyle.Bold))
+                using (Font scoreFont = UI.Body(38f, FontStyle.Bold))
                 using (Font maxFont = UI.Body(12f, FontStyle.Regular))
                 {
                     Size numSize = TextRenderer.MeasureText(g, scoreText, scoreFont,
                         new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding);
-                    int numTop = 82 + (56 - numSize.Height) / 2;
+                    int numTop = 84 + (56 - numSize.Height) / 2;
                     int maxTop = numTop + Ascent(scoreFont) - Ascent(maxFont);
 
                     TextRenderer.DrawText(g, scoreText, scoreFont, new Point(20, numTop), ink,
@@ -1645,17 +1645,21 @@ namespace ClimateSafe
             string levelText = latestSession?.Level ?? "Belum ada asesmen";
             bool notReady = string.Equals(levelText, ScoringRules.NotReadyLevel,
                 StringComparison.OrdinalIgnoreCase);
+            // Lencana level sebaris dengan angka dan "/100"; lebarnya diukur LabelWidth
+            // (bukan Measure NoPadding) supaya skor 1-3 digit tetap utuh.
+            int pillX = 20 + LabelWidth(scoreText, 38f, FontStyle.Bold) + 8
+                + LabelWidth("/100", 12f, FontStyle.Regular) + 16;
             int pillW = LabelWidth(levelText, 9.75f, FontStyle.Bold) + 28;
-            RoundPanel pill = Card(card, 20, 152, pillW, 28, 14,
+            RoundPanel pill = Card(card, pillX, 98, pillW, 28, 14,
                 notReady ? coralSoft : pillBlueBg, Color.Empty);
             AddAligned(pill, levelText, 0, 0, pillW, 28, 9.75f, true,
                 notReady ? coralInk : pillBlueInk, ContentAlignment.MiddleCenter);
 
-            Stretch(Divider(card, 20, 206, C3 - 40), card, 20, 20);
-            AddText(card, "Terakhir diperbarui:", 20, 218, 150, 18, 9.75f, false, muted);
+            Stretch(Divider(card, 20, 188, C3 - 40), card, 20, 20);
+            AddText(card, "Terakhir diperbarui:", 20, 200, 150, 18, 9.75f, false, muted);
             Label date = AddAligned(card,
                 latestSession?.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") ?? "\u2014",
-                C3 - 20 - 141, 218, 141, 18, 9.75f, false, ink, ContentAlignment.TopRight);
+                C3 - 20 - 141, 200, 141, 18, 9.75f, false, ink, ContentAlignment.TopRight);
             PinRight(date, card, 20);
         }
 
@@ -1719,13 +1723,14 @@ namespace ClimateSafe
             };
             PinRight(seeAll, card, 22);
 
-            // Blok lingkaran progres + teks dipusatkan vertikal pada ruang di bawah judul.
-            const int blockTop = 79;    // tepi bawah subjudul kartu
-            const int blockH = 100;     // tinggi lingkaran progres
-            int blockY = blockTop + (RowBottomH - blockTop - blockH) / 2;
+            // Isi kartu dua kolom: lingkaran progres di kiri, daftar tindakan di kanan.
+            const int contentTop = 92;
+            const int contentBottom = RowBottomH - 20;
+            const int circle = 104;
 
             CircleProgress cp = new CircleProgress();
-            cp.Bounds = new Rectangle(55, blockY, 100, 100);
+            cp.Bounds = new Rectangle(55, contentTop + (contentBottom - contentTop - circle) / 2,
+                circle, circle);
             cp.Percent = latestSession == null ? 0 : (int)Math.Round(latestSession.Progress);
             cp.MainText = (latestSession?.CompletedCount ?? 0) + "/" + (latestSession?.Items.Count ?? 0);
             cp.SubText = "SELESAI";
@@ -1735,17 +1740,62 @@ namespace ClimateSafe
             cp.MutedColor = muted;
             card.Controls.Add(cp);
 
+            int listX = 55 + circle + 24;
             Label hazardTitle = AddText(card, latestSession?.HazardName ?? "Belum ada asesmen",
-                213, blockY + 8, 380, 28, 12, true, ink);
-            Stretch(hazardTitle, card, 213, 20);
+                listX, contentTop, 380, 20, 9.75f, true, ink);
+            Stretch(hazardTitle, card, listX, 20);
 
-            Label checklistHint = AddText(card, latestSession == null
-                ? "Mulai asesmen untuk membuat checklist persiapan."
-                : latestSession.Items.Count == 0
-                    ? "Tidak ada tindakan yang dihasilkan untuk sesi ini."
-                    : "Buka checklist untuk menandai tindakan yang sudah dikerjakan.",
-                213, blockY + 42, 370, 65, 9.75f, false, muted);
-            Stretch(checklistHint, card, 213, 20);
+            // Tindakan diambil dari sesi yang sama dengan lingkaran (latestSession.Items yang
+            // sudah dimuat), urutannya sama dengan halaman Checklist.
+            int itemCount = latestSession == null ? 0 : latestSession.Items.Count;
+            if (itemCount == 0)
+            {
+                Label empty = AddText(card, latestSession == null
+                    ? "Mulai asesmen untuk membuat checklist persiapan."
+                    : "Tidak ada tindakan yang dihasilkan untuk sesi ini.",
+                    listX, contentTop + 30, 370, 65, 9.75f, false, muted);
+                Stretch(empty, card, listX, 20);
+                return;
+            }
+
+            int shown = Math.Min(5, itemCount);
+            int listTop = contentTop + 30;
+            int rowH = Math.Max(40, Math.Min(56, (contentBottom - listTop) / shown));
+            int listY = listTop + Math.Max(0, (contentBottom - listTop - rowH * shown) / 2);
+
+            for (int i = 0; i < shown; i++)
+            {
+                ChecklistItem item = latestSession.Items[i];
+
+                BufferedPanel row = new BufferedPanel();
+                row.Bounds = new Rectangle(listX, listY + i * rowH,
+                    Math.Max(120, cw - listX - 20), rowH);
+                row.BackColor = Color.White;
+                card.Controls.Add(row);
+                Stretch(row, card, listX, 20);
+
+                // Hanya tampilan: TickBox dinonaktifkan supaya kliknya jatuh ke baris.
+                TickBox tick = new TickBox();
+                tick.Bounds = new Rectangle(0, (rowH - 18) / 2, 18, 18);
+                tick.OnColor = blue;
+                tick.OffBorder = line;
+                tick.Checked = item.IsCompleted;
+                tick.Enabled = false;
+                row.Controls.Add(tick);
+
+                Label title = AddAligned(row, item.Description, 30, (rowH - 20) / 2,
+                    Math.Max(60, row.Width - 30), 20, 9.75f, false,
+                    item.IsCompleted ? muted : ink, ContentAlignment.MiddleLeft);
+                title.AutoEllipsis = true;
+                Stretch(title, row, 30, 0);
+
+                if (i < shown - 1)
+                {
+                    Stretch(Divider(row, 0, rowH - 1, row.Width), row, 0, 0);
+                }
+
+                MakeClickable(row, delegate (object sender, EventArgs e) { Nav.ShowChecklist(this); });
+            }
         }
 
         private void BuildPriorities(Panel pageHost)
