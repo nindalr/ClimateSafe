@@ -392,9 +392,9 @@ internal sealed class AdminKontenPage : BufferedPanel
     // Pemetaan ikon sama dengan FrmEdukasi.
     private static string HazardGlyph(string hazardName)
     {
-        if (string.Equals(hazardName, "Cuaca Ekstrem", StringComparison.OrdinalIgnoreCase)) return "☂";
-        if (string.Equals(hazardName, "Suhu Panas Ekstrem", StringComparison.OrdinalIgnoreCase)) return "☀";
-        return "≈";
+        if (string.Equals(hazardName, "Cuaca Ekstrem", StringComparison.OrdinalIgnoreCase)) return Ico.Storm;
+        if (string.Equals(hazardName, "Suhu Panas Ekstrem", StringComparison.OrdinalIgnoreCase)) return Ico.Sun;
+        return Ico.Rain;
     }
 
     private void PaintHazardSelection()

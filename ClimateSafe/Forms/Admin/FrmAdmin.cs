@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -188,7 +188,7 @@ namespace ClimateSafe
             AdminUi.AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, AdminUi.TitleBlue);
             AdminUi.AddText(sidebar, "Panel Admin", 80, 48, 172, 16, 7.5f, false, AdminUi.Muted);
 
-            string[] glyphs = { "☺", "▤", "↺" };
+            string[] glyphs = { Ico.People, Ico.Page, Ico.Report };
             string[] names = { "Kelola Pengguna", "Kelola Konten", "Log & Monitoring" };
 
             for (int i = 0; i < names.Length; i++)
