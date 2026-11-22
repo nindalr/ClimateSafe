@@ -357,14 +357,18 @@ namespace ClimateSafe
             {
                 int keep = PendingAssessmentId != 0 ? PendingAssessmentId : selectedAssessmentId;
                 PendingAssessmentId = 0;
-                IReadOnlyList<ChecklistSession> loaded = CurrentUserId == 0
+                IReadOnlyList<ChecklistSession> loaded = Session.IsGuest
+                    ? (GuestSessionView.GetChecklistSession() is ChecklistSession guest ? new List<ChecklistSession> { guest } : new List<ChecklistSession>())
+                    : CurrentUserId == 0
                     ? new List<ChecklistSession>()
                     : service.GetSessions(CurrentUserId);
 
                 sessions = loaded.ToList();
                 if (dimensionNames.Count == 0 && sessions.Count > 0)
                 {
-                    dimensionNames = recommendationRepository.GetDimensionNames();
+                    dimensionNames = Session.IsGuest
+                        ? GuestSessionView.GetDimensions().ToDictionary(d => d.DimensionId, d => d.DimensionName)
+                        : recommendationRepository.GetDimensionNames();
                 }
 
                 ChecklistSession? selected = sessions.FirstOrDefault(s => s.AssessmentId == keep)
@@ -391,7 +395,9 @@ namespace ClimateSafe
             bool wanted = !item.IsCompleted;
             try
             {
-                service.SetCompleted(CurrentUserId, item.ChecklistItemId, wanted);
+                if (Session.IsGuest)
+                    Session.GuestAssessment!.SetChecklistCompleted(item.ChecklistItemId, wanted);
+                else service.SetCompleted(CurrentUserId, item.ChecklistItemId, wanted);
                 LoadSessions();
             }
             catch (Exception ex)

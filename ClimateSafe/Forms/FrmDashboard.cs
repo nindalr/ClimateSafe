@@ -656,7 +656,7 @@ namespace ClimateSafe
 
         public static void ShowChecklist(Form from, int? assessmentId = null)
         {
-            if (Session.CurrentUser == null)
+            if (Session.CurrentUser == null && !Session.IsGuest)
             {
                 MessageBox.Show(from, "Silakan login untuk membuka checklist.", "Checklist");
                 return;
@@ -891,7 +891,7 @@ namespace ClimateSafe
         {
             try
             {
-                latestSession = Session.CurrentUser == null ? null
+                latestSession = Session.IsGuest ? GuestSessionView.GetChecklistSession() : Session.CurrentUser == null ? null
                     : checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
                 dashPage.SuspendLayout();
                 cardScore.Dispose();
