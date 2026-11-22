@@ -12,4 +12,7 @@
     <NoWarn>$(NoWarn);WFO1000;CS8618;CS8622;CS8600;CS8601;CS8602;CS8603;CS8604;CS8625</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ClimateSafe.Core\ClimateSafe.Core.csproj" />
+  </ItemGroup>
 </Project>

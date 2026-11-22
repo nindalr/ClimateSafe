@@ -190,7 +190,14 @@ namespace ClimateSafe
             recPage.SuspendLayout();
             try
             {
-                if (Session.CurrentUser != null)
+                if (Session.IsGuest)
+                {
+                    session = GuestSessionView.GetChecklistSession();
+                    scores = GuestSessionView.GetDimensions();
+                    recommendations = GuestSessionView.GetRecommendations();
+                    hazardId = Session.GuestAssessment?.HazardId ?? 0;
+                }
+                else if (Session.CurrentUser != null)
                 {
                     session = checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
                     if (session != null)
