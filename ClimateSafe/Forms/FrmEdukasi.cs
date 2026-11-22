@@ -555,7 +555,8 @@ namespace ClimateSafe
             else
             {
                 int summaryTop = 0;
-                if (publishedContents.Count > 0)
+                // Pemilih materi hanya berguna bila ada lebih dari satu materi terpublikasi.
+                if (publishedContents.Count > 1)
                 {
                     AddText(holder, "Pilih materi", 0, 0, 250, 22, 10f, true, titleBlue);
                     var articlePicker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList,
