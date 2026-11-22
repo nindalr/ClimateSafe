@@ -17,8 +17,7 @@ Panduan ini menjelaskan cara menginstal, mengatur database, dan menggunakan apli
 
 ### Langkah 1. Menyiapkan database dan API
 
-Untuk pengembangan lokal, siapkan PostgreSQL dan jalankan migrasi 000 sampai 007 sesuai petunjuk di `ClimateSafe.Api/README.md`. Untuk database kosong, `database/setup.bat` juga dapat menyiapkan skema awal dan menjalankan migrasi 002 sampai 007. Perintah `setup.bat reset` menghapus database beserta seluruh datanya.
-
+Untuk pengembangan lokal, siapkan PostgreSQL dan jalankan migrasi 000 sampai 007. 
 Pada terminal pertama, atur connection string untuk API dan jalankan API:
 
 ```powershell
@@ -26,7 +25,7 @@ $env:ConnectionStrings__ClimateSafe = 'Host=localhost;Port=5432;Database=climate
 dotnet run --project ClimateSafe.Api --launch-profile http
 ```
 
-Sesuaikan koneksi dengan database Anda dan biarkan API berjalan. Buka `http://localhost:5028/health` untuk memeriksa proses API.
+Sesuaikan koneksi dengan database Anda dan biarkan API berjalan. Untuk pengembangan API akan terbuka pada localhost. Buka `http://localhost:5028/health` untuk memeriksa proses API.
 
 ### Langkah 2. Menjalankan aplikasi desktop
 
@@ -36,11 +35,6 @@ Pada terminal kedua, jalankan:
 $env:CLIMATESAFE_API_URL = 'http://localhost:5028'
 dotnet run --project ClimateSafe/ClimateSafe.csproj
 ```
-
-Jika variabel tidak diatur, aplikasi menggunakan alamat API Railway bawaan. Untuk
-pengembangan lokal, tetapkan `CLIMATESAFE_API_URL` seperti contoh di atas. Untuk
-server selain localhost, gunakan HTTPS. Pengguna desktop tidak perlu memasukkan
-kredensial PostgreSQL.
 
 ### Langkah 4. Login ke Aplikasi
 
@@ -52,7 +46,7 @@ ClimateSafe menyediakan dua jenis akun:
 Pilih **Tanpa Login** untuk mencoba asesmen tanpa koneksi API. Hasil,
 rekomendasi, dan checklist tamu hanya tersedia selama sesi dan tidak dikirim ke
 server. Menu riwayat dan profil memerlukan login. Jika API edukasi tidak dapat
-dihubungi, tamu dapat membaca materi bawaan yang mungkin belum terbaru; jika API
+dihubungi, tamu dapat membaca materi bawaan yang mungkin belum terbaru. Jika API
 tersedia, halaman Edukasi menampilkan materi terpublikasi dari server.
 
 Informasi akses admin disampaikan melalui panduan yang diberikan kepada admin.
@@ -121,38 +115,6 @@ Berikut fitur yang tersedia:
 - **Log & Monitoring:** Admin dapat memantau aktivitas aplikasi berdasarkan periode (hari ini, 7 hari terakhir, atau 30 hari terakhir) dan jenis bahaya. Halaman ini menampilkan jumlah seluruh pengguna, pengguna aktif, dan asesmen yang selesai. Tersedia juga tabel riwayat asesmen yang berisi waktu, nama pengguna, jenis bahaya, skor, dan tingkat kesiapan. Tombol Muat Ulang digunakan untuk memperbarui data.
 
 Untuk keluar dari akun admin, klik tombol **Keluar** di bagian kiri bawah halaman.
-
-## Alur Uji Cepat
-
-Bagian ini dapat digunakan untuk memeriksa apakah fitur utama ClimateSafe sudah berjalan dengan baik.
-
-1. Buat akun pengguna baru dan login.
-2. Buka menu **Asesmen**, lalu pilih Banjir.
-3. Jawab lima pertanyaan menggunakan kombinasi berikut. Angka menunjukkan urutan pilihan jawaban dari atas ke bawah, dengan pilihan pertama sebagai jawaban yang menunjukkan persiapan terbaik.
-
-| Jawaban Pertanyaan 1–5 | Hasil yang Diharapkan |
-|---|---|
-| 1, 1, 1, 1, 1 | Siap |
-| 3, 2, 1, 2, 2 | Cukup Siap |
-| 4, 3, 4, 3, 4 | Belum Siap |
-
-4. Setelah menyelesaikan asesmen, periksa menu **Rekomendasi**, **Checklist**, dan **Riwayat**.
-5. Pastikan hasil asesmen yang baru dilakukan sudah muncul di menu Riwayat.
-
-Jika ketiga skenario menghasilkan kategori yang sesuai, fitur utama asesmen sudah dapat diuji.
-
-## Jika Terjadi Masalah
-
-| Pesan atau Kondisi | Pemeriksaan |
-|---|---|
-| API tidak dapat dihubungi | Pastikan API berjalan dan `CLIMATESAFE_API_URL` menunjuk ke alamat yang benar. |
-| API gagal mengakses database | Periksa PostgreSQL dan `ConnectionStrings__ClimateSafe` pada terminal API. |
-| Tabel tidak ditemukan | Pastikan migrasi 000 sampai 007 telah dijalankan pada database yang digunakan API. |
-| Login gagal | Periksa email, password, dan status akun. |
-
-## Untuk Pengembang
-
-Project desktop dan API memerlukan .NET 10 SDK. Petunjuk koneksi dan migrasi database tersedia di `ClimateSafe.Api/README.md`.
 
 <img width="683" height="1154" alt="image" src="https://github.com/user-attachments/assets/5b9b892a-1113-48b4-88b7-7400b77ecbd3" />
 
