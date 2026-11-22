@@ -875,6 +875,7 @@ namespace ClimateSafe
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly RoundPanel[] hazardCards = new RoundPanel[3];
+        private readonly Label[,] hazardSummary = new Label[3, 2];
 
         private Panel dashScroll;
         private Panel dashPage;
@@ -914,6 +915,7 @@ namespace ClimateSafe
             base.OnVisibleChanged(e);
             if (Visible && dashBuilt)
             {
+                RequestHazardSummaries();
                 RefreshUserCard();
                 if (greetingLabel != null) greetingLabel.Text = "Halo, " + Session.FirstName;
                 RefreshSavedData();
@@ -1040,6 +1042,7 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
+            RequestHazardSummaries();
         }
 
         private void LayoutPage()
@@ -1676,7 +1679,7 @@ namespace ClimateSafe
                 41, HazardTitleY + 25, 450, 18, 8.5f, false, muted);
 
             // Nama bahaya dari satu sumber (FrmAssessment.hazardNames), deskripsi dari
-            // EducationContent, tujuan klik = halaman Edukasi untuk bahaya itu.
+            // materi Edukasi lewat API (EducationSummary), tujuan klik = halaman Edukasi.
             AddHazard(pageHost, 0, 0, FrmAssessment.hazardNames[0], "\U0001F30A", "\u2248",
                 Color.FromArgb(112, 132, 146), Color.FromArgb(60, 78, 92), "banjir");
 
@@ -1711,10 +1714,9 @@ namespace ClimateSafe
 
             AddText(card, hazardName, 16, 96, 300, 22, 10.5f, true, ink);
 
-            List<string> summaryLines = HazardSummaryLines(hazardName, 285);
-            for (int i = 0; i < summaryLines.Count; i++)
+            for (int i = 0; i < 2; i++)
             {
-                AddText(card, summaryLines[i], 16, 124 + i * 20, 285, 20, 9f, false, muted);
+                hazardSummary[index, i] = AddText(card, "", 16, 124 + i * 20, 285, 20, 9f, false, muted);
             }
 
             Stretch(Divider(card, 16, 182, C3 - 32), card, 16, 16);
@@ -1756,41 +1758,55 @@ namespace ClimateSafe
             }
         }
 
-        // Deskripsi kartu bahaya: kalimat pertama dari paragraf pertama materi Edukasi,
-        // maksimal 2 baris dan dipotong di batas kata.
-        private static List<string> HazardSummaryLines(string hazardName, int maxWidth)
+        // Memuat ringkasan materi dari API lalu memperbarui label di thread UI.
+        private void RequestHazardSummaries()
         {
-            string sentence = FirstSentence(EducationContent.GetSummary(hazardName));
-            if (sentence.Length == 0)
+            RefreshHazardSummaries();
+            EducationSummary.LoadAsync(delegate ()
             {
-                return new List<string> { "Belum ada materi" };
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((Action)RefreshHazardSummaries);
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            });
+        }
+
+        private void RefreshHazardSummaries()
+        {
+            if (IsDisposed) return;
+
+            for (int index = 0; index < 3; index++)
+            {
+                string text;
+                EducationState state = EducationSummary.GetState(FrmAssessment.hazardNames[index],
+                    out text);
+                List<string> lines = SummaryLines(EducationSummary.StateText(state, text), 285);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    Label label = hazardSummary[index, i];
+                    if (label == null || label.IsDisposed) continue;
+                    label.Text = i < lines.Count ? lines[i] : "";
+                }
             }
+        }
+
+        // Deskripsi kartu bahaya: teks ringkasan dibungkus maksimal 2 baris dan
+        // dipotong di batas kata.
+        private static List<string> SummaryLines(string sentence, int maxWidth)
+        {
+            if (sentence.Length == 0) return new List<string>();
 
             using (Font f = UI.Body(9f, FontStyle.Regular))
             {
                 List<string> lines = WrapText(sentence, f, maxWidth);
                 if (lines.Count <= 2) return lines;
 
-                List<string> result = new List<string> { lines[0], Ellipsize(lines[1], f, maxWidth) };
-                return result;
+                return new List<string> { lines[0], Ellipsize(lines[1], f, maxWidth) };
             }
-        }
-
-        private static string FirstSentence(string? summary)
-        {
-            if (string.IsNullOrWhiteSpace(summary)) return "";
-
-            string[] rawLines = summary.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-            foreach (string raw in rawLines)
-            {
-                string paragraph = raw.Trim();
-                if (paragraph.Length == 0) continue;
-                if (paragraph.StartsWith("- ", StringComparison.Ordinal)) continue;
-
-                int stop = paragraph.IndexOf(". ", StringComparison.Ordinal);
-                return stop >= 0 ? paragraph.Substring(0, stop + 1) : paragraph;
-            }
-            return "";
         }
 
         private static string Ellipsize(string text, Font font, int maxWidth)

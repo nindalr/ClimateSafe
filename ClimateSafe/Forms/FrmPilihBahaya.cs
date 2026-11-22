@@ -141,6 +141,7 @@ namespace ClimateSafe
         private readonly RoundPanel[] hzIconBoxes = new RoundPanel[3];
         private readonly Label[] hzIcons = new Label[3];
         private readonly RadioDot[] hzRadios = new RadioDot[3];
+        private readonly Label[,] hzSummary = new Label[3, 2];
 
         private BufferedPanel pbScroll;
         private BufferedPanel pbPage;
@@ -166,6 +167,7 @@ namespace ClimateSafe
             if (!Visible || !pbBuilt) return;
 
             RefreshUserCard();
+            RequestHazardSummaries();
             foreach (HazardOption option in hzOptions) option.ClearFocusHint();
             SelectHazard(0);
             ActiveControl = null;
@@ -253,6 +255,7 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
+            RequestHazardSummaries();
         }
 
         private void LayoutPage()
@@ -339,10 +342,9 @@ namespace ClimateSafe
                 AddAligned(opt, FrmAssessment.hazardNames[k], 17, 65, 300, 22, 10f, true, ink,
                     ContentAlignment.MiddleLeft);
 
-                List<string> dl = HazardSummaryLines(FrmAssessment.hazardNames[k], descFont, 266);
-                for (int j = 0; j < dl.Count; j++)
+                for (int j = 0; j < 2; j++)
                 {
-                    AddAligned(opt, dl[j], 17, 91 + j * 21, 310, 20, 9f, false, muted,
+                    hzSummary[k, j] = AddAligned(opt, "", 17, 91 + j * 21, 310, 20, 9f, false, muted,
                         ContentAlignment.MiddleLeft);
                 }
 
@@ -532,37 +534,50 @@ namespace ClimateSafe
             using (Font f = UI.Body(size, style)) return LabelWidth(text, f);
         }
 
-        // Deskripsi kartu bahaya: kalimat pertama paragraf pertama materi Edukasi, maksimal
-        // 2 baris, dipotong di batas kata. Aturan sama dengan kartu bahaya di Beranda; helper
-        // di FrmDashboard privat sehingga tidak bisa dipakai ulang dari sini.
-        private static List<string> HazardSummaryLines(string hazardName, Font font, int maxWidth)
+        // Memuat ringkasan materi dari API (EducationSummary) lalu memperbarui label
+        // kartu bahaya di thread UI.
+        private void RequestHazardSummaries()
         {
-            string sentence = FirstSentence(EducationContent.GetSummary(hazardName));
-            if (sentence.Length == 0)
+            RefreshHazardSummaries();
+            EducationSummary.LoadAsync(delegate ()
             {
-                return new List<string> { "Belum ada materi" };
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((Action)RefreshHazardSummaries);
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            });
+        }
+
+        private void RefreshHazardSummaries()
+        {
+            if (IsDisposed) return;
+
+            for (int k = 0; k < 3; k++)
+            {
+                string text;
+                EducationState state = EducationSummary.GetState(FrmAssessment.hazardNames[k], out text);
+                List<string> lines = SummaryLines(EducationSummary.StateText(state, text), descFont, 266);
+
+                for (int j = 0; j < 2; j++)
+                {
+                    Label label = hzSummary[k, j];
+                    if (label == null || label.IsDisposed) continue;
+                    label.Text = j < lines.Count ? lines[j] : "";
+                }
             }
+        }
+
+        // Teks ringkasan dibungkus maksimal 2 baris, dipotong di batas kata.
+        private static List<string> SummaryLines(string sentence, Font font, int maxWidth)
+        {
+            if (sentence.Length == 0) return new List<string>();
 
             List<string> lines = WrapLines(sentence, font, maxWidth);
             if (lines.Count <= 2) return lines;
             return new List<string> { lines[0], Ellipsize(lines[1], font, maxWidth) };
-        }
-
-        private static string FirstSentence(string? summary)
-        {
-            if (string.IsNullOrWhiteSpace(summary)) return "";
-
-            string[] rawLines = summary.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-            foreach (string raw in rawLines)
-            {
-                string paragraph = raw.Trim();
-                if (paragraph.Length == 0) continue;
-                if (paragraph.StartsWith("- ", StringComparison.Ordinal)) continue;
-
-                int stop = paragraph.IndexOf(". ", StringComparison.Ordinal);
-                return stop >= 0 ? paragraph.Substring(0, stop + 1) : paragraph;
-            }
-            return "";
         }
 
         private static string Ellipsize(string text, Font font, int maxWidth)
