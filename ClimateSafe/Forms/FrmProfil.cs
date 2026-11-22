@@ -260,24 +260,24 @@ namespace ClimateSafe
 
     internal sealed class FrmProfil : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color coralInk = Color.FromArgb(159, 64, 51);
-        private readonly Color errorRed = Color.FromArgb(217, 80, 63);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color btnBlue = Color.FromArgb(55, 108, 178);
-        private readonly Color btnBlueHover = Color.FromArgb(44, 94, 164);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color subInk = Color.FromArgb(82, 102, 126);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color bandBg = Color.FromArgb(250, 252, 255);
-        private readonly Color readOnlyBg = Color.FromArgb(244, 247, 252);
-        private readonly Color badgeBg = Color.FromArgb(226, 235, 250);
-        private readonly Color pillBlueBg = Color.FromArgb(228, 238, 247);
-        private readonly Color pillBlueInk = Color.FromArgb(47, 95, 148);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color coralInk = Theme.CoralInk;
+        private readonly Color errorRed = Theme.ErrorRed;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color btnBlue = Theme.BtnBlue;
+        private readonly Color btnBlueHover = Theme.BtnBlueHover;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color subInk = Theme.SubInk;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color bandBg = Theme.BandBg;
+        private readonly Color readOnlyBg = Theme.ReadOnlyBg;
+        private readonly Color badgeBg = Theme.BadgeBg;
+        private readonly Color pillBlueBg = Theme.PillBlueBg;
+        private readonly Color pillBlueInk = Theme.PillBlueInk;
 
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
@@ -854,7 +854,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -885,6 +885,20 @@ namespace ClimateSafe
             AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
 
             AddChevron(user, 196, 20, muted);
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
         }
 
         private void SetActiveMenu(RoundPanel? active)
