@@ -285,7 +285,6 @@ namespace ClimateSafe.Auth
             suggestPanel.BringToFront();
         }
 
-        private void btnLogin_Click(object? sender, EventArgs e)
         private async void btnLogin_Click(object? sender, EventArgs e)
         {
             if(!AuthUi.ValidEmail(txtEmail.Text.Trim())) { AuthUi.Warn(this,"Masukkan alamat email yang valid."); txtEmail.Focus(); return; }
