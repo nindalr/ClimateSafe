@@ -20,7 +20,7 @@ internal static class ApiClient
     private static T? Send<T>(HttpMethod method, string path, object? body = null)
     {
         string baseUrl = Environment.GetEnvironmentVariable("CLIMATESAFE_API_URL")
-            ?? "https://acceptable-generosity-production-90779b87.up.railway.app";
+            ?? GetEmbeddedApiUrl();
         if (!Uri.TryCreate(baseUrl.TrimEnd('/') + "/", UriKind.Absolute, out var baseUri) ||
             (baseUri.Scheme != Uri.UriSchemeHttps && !(baseUri.Scheme == Uri.UriSchemeHttp && baseUri.IsLoopback)))
             throw new InvalidOperationException("Alamat API harus menggunakan HTTPS, atau HTTP untuk localhost.");
@@ -44,6 +44,20 @@ internal static class ApiClient
         }
         catch (HttpRequestException ex) { throw new InvalidOperationException("API tidak dapat dihubungi. Periksa alamat dan koneksi API.", ex); }
         catch (TaskCanceledException ex) { throw new InvalidOperationException("Permintaan API melewati batas waktu.", ex); }
+    }
+
+    private static string GetEmbeddedApiUrl()
+    {
+        using var stream = typeof(ApiClient).Assembly.GetManifestResourceStream("ClimateSafe.ApiConfiguration")
+            ?? throw new InvalidOperationException("Konfigurasi API tidak tersedia.");
+        using var reader = new StreamReader(stream);
+        while (reader.ReadLine() is string line)
+        {
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2 && parts[0].Trim() == "CLIMATESAFE_API_URL")
+                return parts[1].Trim().Trim('\u0022', '\u0027');
+        }
+        throw new InvalidOperationException("Alamat API belum dikonfigurasi.");
     }
 }
 

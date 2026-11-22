@@ -15,4 +15,9 @@
   <ItemGroup>
     <ProjectReference Include="..\ClimateSafe.Core\ClimateSafe.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include=".env.api" LogicalName="ClimateSafe.ApiConfiguration" Condition="Exists('.env.api')" />
+    <EmbeddedResource Include=".env.example" LogicalName="ClimateSafe.ApiConfiguration" Condition="!Exists('.env.api')" />
+  </ItemGroup>
 </Project>
