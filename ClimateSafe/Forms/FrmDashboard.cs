@@ -659,7 +659,7 @@ namespace ClimateSafe
 
         public static void ShowChecklist(Form from, int? assessmentId = null)
         {
-            if (Session.CurrentUser == null)
+            if (Session.CurrentUser == null && !Session.IsGuest)
             {
                 MessageBox.Show(from, "Silakan login untuk membuka checklist.", "Checklist");
                 return;
@@ -785,6 +785,10 @@ namespace ClimateSafe
         // FormLogin (handler FormClosed pada form utama: user.Logout() lalu login tampil).
         public static void Logout(Form from)
         {
+            bool isGuest = Session.IsGuest;
+            if (isGuest && Session.GuestAssessment != null && MessageBox.Show(from,
+                "Hasil asesmen dan checklist tamu akan dihapus. Keluar sekarang?", "Keluar",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             Form main = dashboard;
 
             quitting = true;
@@ -798,6 +802,7 @@ namespace ClimateSafe
                 if (main != null && !main.IsDisposed)
                 {
                     main.Close();
+                    if (isGuest) ShowLoginAgain();
                 }
                 else
                 {
@@ -806,6 +811,11 @@ namespace ClimateSafe
             }
             finally
             {
+                if (isGuest)
+                {
+                    Session.GuestAssessment = null;
+                    Session.IsGuest = false;
+                }
                 quitting = false;
             }
         }
@@ -957,7 +967,7 @@ namespace ClimateSafe
         {
             try
             {
-                latestSession = Session.CurrentUser == null ? null
+                latestSession = Session.IsGuest ? GuestSessionView.GetChecklistSession() : Session.CurrentUser == null ? null
                     : checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
                 dashPage.SuspendLayout();
                 cardScore.Dispose();

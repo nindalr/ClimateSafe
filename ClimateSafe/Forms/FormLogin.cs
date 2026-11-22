@@ -59,6 +59,22 @@ namespace ClimateSafe.Auth
             Controls.Add(btnLogin);
             Controls.Add(btnRegister);
 
+            Button guest = new Button { Text = "Tanpa Login", Location = new Point(110, 195), Size = new Size(210, 32) };
+            guest.Click += (_, _) =>
+            {
+                MessageBox.Show(this, "Asesmen tamu dapat digunakan tanpa internet. Hasil dan checklist hanya tersimpan selama aplikasi terbuka. Edukasi offline menggunakan materi bawaan yang mungkin tidak terbaru.",
+                    "Tanpa Login", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Nav.Reset();
+                Session.CurrentUser = null;
+                Session.IsGuest = true;
+                Session.GuestAssessment = null;
+                ApiClient.Token = null;
+                var form = new FrmPilihBahaya();
+                form.Show();
+                Hide();
+            };
+            Controls.Add(guest);
+
             AcceptButton = btnLogin;
         }
 
@@ -75,6 +91,8 @@ namespace ClimateSafe.Auth
                 }
 
                 // POLYMORPHISM: User -> dashboard, Admin -> panel admin
+                Session.IsGuest = false;
+                Session.GuestAssessment = null;
                 Form main = user.CreateMainForm();
                 main.FormClosed += (s, args) =>
                 {

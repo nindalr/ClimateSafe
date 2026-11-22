@@ -1,7 +1,15 @@
 # ClimateSafe API
 
-API menggunakan .NET 10 dan PostgreSQL. Atur connection string sebagai environment
-variable di lingkungan server atau terminal pengembangan. Contoh PowerShell:
+API menggunakan .NET 10 dan PostgreSQL.
+
+Perhitungan skor dan prioritas menggunakan `ClimateSafe.Core`, yang juga
+direferensikan aplikasi desktop. Katalog guest bawaan versi `initial-001` berasal
+dari data awal migrasi 001, 004, dan 005. Katalog API online tetap dibaca dari
+PostgreSQL; perubahan pada salah satu salinan tidak otomatis mengubah yang lain.
+ID pilihan database tidak digunakan sebagai ID pilihan katalog guest.
+
+Atur connection string sebagai environment variable di lingkungan server atau
+terminal pengembangan. Contoh PowerShell:
 
 ```powershell
 $env:ConnectionStrings__ClimateSafe = 'Host=localhost;Port=5432;Database=climatesafe;Username=postgres;Password=PASSWORD_ANDA'

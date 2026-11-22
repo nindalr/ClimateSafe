@@ -696,8 +696,12 @@ namespace ClimateSafe
             List<ApiQuestion> loaded;
             try
             {
-                loaded = ApiClient.Get<List<ApiQuestion>>($"api/hazards/{index + 1}/questions")
-                    ?? throw new InvalidOperationException("Katalog pertanyaan tidak tersedia.");
+                loaded = Session.IsGuest
+                    ? ClimateSafe.Core.GuestCatalog.Load().Hazards.Single(h => h.Id == index + 1).Questions
+                        .Select(q => new ApiQuestion(q.DimensionId, q.DimensionId, q.DimensionName, q.Text, q.Description,
+                            q.Options.Select(o => new ApiOption(o.DisplayOrder, o.Text, o.DisplayOrder)).ToList())).ToList()
+                    : ApiClient.Get<List<ApiQuestion>>($"api/hazards/{index + 1}/questions")
+                        ?? throw new InvalidOperationException("Katalog pertanyaan tidak tersedia.");
                 if (loaded.Count != 5 || loaded.Any(q => q.Options.Count != 4))
                     throw new InvalidOperationException("Katalog harus memiliki lima pertanyaan dengan empat pilihan.");
             }
@@ -920,6 +924,23 @@ namespace ClimateSafe
 
             try
             {
+                if (Session.IsGuest)
+                {
+                    var selections = catalog.Select((question, index) =>
+                        (question.DimensionId, question.Options[answers[index]].DisplayOrder))
+                        .ToDictionary(item => item.DimensionId, item => item.DisplayOrder);
+                    Session.GuestAssessment = ClimateSafe.Core.GuestAssessmentSession.Evaluate(hazardIdx + 1, selections);
+                    Session.GuestAssessmentDate = DateTime.Now;
+                    var guest = Session.GuestAssessment;
+                    Nav.ShowHasil(this, new HasilAsesmenData
+                    {
+                        HazardName = guest.HazardName, HazardId = guest.HazardId, OverallScore = guest.OverallScore,
+                        Level = guest.Level, AssessmentDate = Session.GuestAssessmentDate,
+                        GapCount = guest.Checklist.Count, Dimensions = GuestSessionView.GetDimensions(),
+                        Recommendations = GuestSessionView.GetRecommendations()
+                    });
+                    return;
+                }
                 if (Session.CurrentUser == null)
                     throw new InvalidOperationException("Silakan login untuk menyimpan asesmen.");
 

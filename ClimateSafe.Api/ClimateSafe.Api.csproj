@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ClimateSafe.Core\ClimateSafe.Core.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.15" />
     <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>

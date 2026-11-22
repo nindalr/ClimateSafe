@@ -4,23 +4,18 @@ namespace ClimateSafe.Api.Services;
 
 internal static class AssessmentScoringService
 {
-    public const int MaximumAnswerScore = 3;
-    private const double ReadyScore = 80;
-    private const double ModeratelyReadyScore = 40;
-    private const double HighPriorityBelow = 40;
+    public const int MaximumAnswerScore = ClimateSafe.Core.AssessmentRules.MaximumAnswerScore;
 
     public static (double Score, string Level) Evaluate(IReadOnlyList<ScoredAnswer> answers)
     {
-        double score = answers.Sum(answer => answer.Score) * 100.0 / (answers.Count * MaximumAnswerScore);
-        string level = score >= ReadyScore ? "Siap" : score >= ModeratelyReadyScore ? "Cukup Siap" : "Belum Siap";
-        return (score, level);
+        return ClimateSafe.Core.AssessmentRules.Evaluate(answers.Select(answer => answer.Score));
     }
 
     public static bool IsGap(ScoredAnswer answer) =>
-        answer.Score * 100.0 / MaximumAnswerScore < answer.Threshold;
+        ClimateSafe.Core.AssessmentRules.IsGap(answer.Score, answer.Threshold);
 
     public static string Priority(ScoredAnswer answer) =>
         Priority(answer.Score * 100.0 / MaximumAnswerScore);
 
-    public static string Priority(double score) => score < HighPriorityBelow ? "Tinggi" : "Sedang";
+    public static string Priority(double score) => ClimateSafe.Core.AssessmentRules.Priority(score);
 }

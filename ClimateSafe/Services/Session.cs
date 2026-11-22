@@ -5,6 +5,9 @@ namespace ClimateSafe
     internal static class Session
     {
         public static UserAccount CurrentUser;
+        public static bool IsGuest { get; set; }
+        public static ClimateSafe.Core.GuestAssessmentSession? GuestAssessment { get; set; }
+        public static DateTime GuestAssessmentDate { get; set; }
 
         public static string DisplayName =>
             CurrentUser == null ? "Tamu" : CurrentUser.Name;

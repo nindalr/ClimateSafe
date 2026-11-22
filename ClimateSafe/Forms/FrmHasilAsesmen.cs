@@ -422,7 +422,7 @@ namespace ClimateSafe
             hazardLabel.AutoEllipsis = true;
             AddText(card, FormatDate(data.AssessmentDate), col3, 86, colW, 16, 9f, false, muted);
             AddCheck(card, col3, 110, 14, pillBlueInk);
-            AddText(card, "Hasil tersimpan di Riwayat.", col3 + 20, 110, colW - 20, 16, 9f, false, muted);
+            AddText(card, Session.IsGuest ? "Hasil hanya untuk sesi ini." : "Hasil tersimpan di Riwayat.", col3 + 20, 110, colW - 20, 16, 9f, false, muted);
         }
 
         private int BuildDimensionCard(BufferedPanel host, int top)

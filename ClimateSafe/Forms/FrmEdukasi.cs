@@ -243,6 +243,8 @@ namespace ClimateSafe
         private ApiEducation? publishedContent;
         private List<ApiEducation> publishedContents = new();
         private string? educationError;
+        private bool offlineHazards;
+        private bool showingOfflineEducation;
 
         // Tujuan dari kartu Beranda; dipakai sekali saat data dimuat.
         public string? PendingHazard;
@@ -345,7 +347,14 @@ namespace ClimateSafe
 
             try
             {
-                IReadOnlyList<Hazard> loaded = recommendationRepository.GetHazards();
+                IReadOnlyList<Hazard> loaded;
+                offlineHazards = false;
+                try { loaded = recommendationRepository.GetHazards(); }
+                catch (Exception) when (Session.IsGuest)
+                {
+                    offlineHazards = true;
+                    loaded = ClimateSafe.Core.GuestCatalog.Load().Hazards.Select(h => new Hazard(h.Id, h.Name)).ToList();
+                }
                 hazards.Clear();
                 foreach (Hazard h in loaded) hazards.Add(h);
 
@@ -385,14 +394,26 @@ namespace ClimateSafe
             publishedContent = null;
             publishedContents.Clear();
             educationError = null;
+            showingOfflineEducation = false;
             Hazard? hazard = hazards.Find(h => h.Name == selectedHazard);
             if (hazard == null) return;
             try
             {
+                if (offlineHazards) { LoadOfflineEducation(hazard); return; }
                 publishedContents = ApiClient.Get<List<ApiEducation>>($"api/education/hazards/{hazard.HazardId}") ?? new();
                 publishedContent = publishedContents.Find(x => x.ContentId == selectedId) ?? publishedContents.FirstOrDefault();
             }
+            catch (Exception) when (Session.IsGuest) { LoadOfflineEducation(hazard); }
             catch (Exception ex) { educationError = "Materi tidak dapat dimuat. " + ex.Message; }
+        }
+
+        private void LoadOfflineEducation(Hazard hazard)
+        {
+            showingOfflineEducation = true;
+            string? body = OfflineEducationContent.GetSummary(hazard.Name);
+            if (string.IsNullOrWhiteSpace(body)) return;
+            publishedContent = new ApiEducation(0, hazard.HazardId, hazard.Name, body, null, null, DateTime.MinValue);
+            publishedContents.Add(publishedContent);
         }
 
         // Pemetaan ikon sama dengan FrmRekomendasi.HazardGlyph.
@@ -606,7 +627,8 @@ namespace ClimateSafe
             RoundPanel card = Card(holder, 0, 0, w, HeadH + 160 + 51, 16, Color.White, line);
             Stretch(card, holder, 0, 0);
 
-            AddText(card, "Ringkasan materi", 24, 24, 240, 18, 9f, true, muted);
+            AddText(card, showingOfflineEducation ? "Materi bawaan (offline; mungkin tidak terbaru)" : "Ringkasan materi",
+                24, 24, Math.Max(240, w - 48), 18, 9f, true, muted);
             AddText(card, hazardName, 24, 46, Math.Max(200, w - 48), 26, 15f, true, titleBlue);
 
             Panel headLine = new Panel();
