@@ -627,7 +627,7 @@ namespace ClimateSafe
 
             RoundPanel pill = Card(host, PageMaxW - 158, 29, 158, 30, 15, Color.White, line);
             AddSymbol(pill, Ico.Clock, 10, 0, 20, 30, 10f, navy);
-            AddAligned(pill, "Estimasi 3\u20135 menit", 32, 0, 122, 30, 8.5f, false, ink,
+            AddAligned(pill, "Estimasi 3-5 menit", 32, 0, 122, 30, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             PinRight(pill, host, 0);
         }
