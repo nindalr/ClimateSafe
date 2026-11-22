@@ -1,86 +1,37 @@
-﻿using System;
-using System.Drawing;
+using System;
 using System.Windows.Forms;
 
 namespace ClimateSafe.Auth
 {
     public class FormRegister : Form
     {
-        private readonly AuthService _auth = new AuthService();
-        private readonly TextBox txtName = new TextBox();
-        private readonly TextBox txtEmail = new TextBox();
-        private readonly TextBox txtPassword = new TextBox();
-        private readonly Button btnRegister = new Button();
-
+        private readonly AuthService _auth=new AuthService();
+        private readonly TextBox txtName=new TextBox(), txtEmail=new TextBox(), txtPassword=new TextBox(), txtConfirm=new TextBox();
+        private readonly Button btnRegister=new AuthRoundedButton();
         public FormRegister()
         {
-            Text = "ClimateSafe - Register";
-            ClientSize = new Size(340, 240);
-            StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-
-            Label lblName = new Label();
-            lblName.Text = "Nama";
-            lblName.Location = new Point(20, 25);
-            lblName.AutoSize = true;
-            txtName.Location = new Point(110, 22);
-            txtName.Width = 210;
-
-            Label lblEmail = new Label();
-            lblEmail.Text = "Email";
-            lblEmail.Location = new Point(20, 65);
-            lblEmail.AutoSize = true;
-            txtEmail.Location = new Point(110, 62);
-            txtEmail.Width = 210;
-
-            Label lblPass = new Label();
-            lblPass.Text = "Password";
-            lblPass.Location = new Point(20, 105);
-            lblPass.AutoSize = true;
-            txtPassword.Location = new Point(110, 102);
-            txtPassword.Width = 210;
-            txtPassword.UseSystemPasswordChar = true;
-
-            btnRegister.Text = "Register";
-            btnRegister.Location = new Point(110, 150);
-            btnRegister.Size = new Size(110, 32);
-            btnRegister.Click += btnRegister_Click;
-
-            Controls.Add(lblName);
-            Controls.Add(txtName);
-            Controls.Add(lblEmail);
-            Controls.Add(txtEmail);
-            Controls.Add(lblPass);
-            Controls.Add(txtPassword);
-            Controls.Add(btnRegister);
-
-            AcceptButton = btnRegister;
+            var card=AuthUi.Setup(this,"Register",690,true);
+            card.Controls.Add(AuthUi.Label("Buat akun baru",32,100,368,35,18,AuthUi.Ink,true));
+            card.Controls.Add(AuthUi.Label("Mulai langkah menuju lingkungan lebih aman.",32,137,368,30,10,AuthUi.Muted));
+            AuthUi.Field(card,txtName,"Nama lengkap","Masukkan nama lengkap",176);
+            AuthUi.Field(card,txtEmail,"Email","nama@email.com",260);
+            AuthUi.Field(card,txtPassword,"Password","Buat password",344,true);
+            AuthUi.Field(card,txtConfirm,"Konfirmasi password","Ulangi password",428,true);
+            AuthUi.Button(card,btnRegister,"Daftar",530); btnRegister.Click+=btnRegister_Click;
+            var back=new AuthRoundedButton(); AuthUi.Button(card,back,"Sudah punya akun? Masuk",582,false); back.Click+=(_,_)=>Close();
+            AcceptButton=btnRegister; ActiveControl=txtName;
         }
-
-        private void btnRegister_Click(object? sender, EventArgs e)
+        private void btnRegister_Click(object? sender,EventArgs e)
         {
-            try
-            {
-                bool ok = _auth.Register(txtName.Text, txtEmail.Text, txtPassword.Text);
-                if (ok)
-                {
-                    MessageBox.Show("Registrasi berhasil, silakan login", "Well Done!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Close();
-                }
-                else
-                {
-                    MessageBox.Show("Akun dengan email ini sudah ada", "Register FAIL!!",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error:" + ex.Message, "Register FAIL!!",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            if(string.IsNullOrWhiteSpace(txtName.Text)) { AuthUi.Warn(this,"Nama wajib diisi."); txtName.Focus(); return; }
+            if(!AuthUi.ValidEmail(txtEmail.Text.Trim())) { AuthUi.Warn(this,"Masukkan alamat email yang valid."); txtEmail.Focus(); return; }
+            if(string.IsNullOrWhiteSpace(txtPassword.Text)) { AuthUi.Warn(this,"Password wajib diisi."); txtPassword.Focus(); return; }
+            if(txtPassword.Text!=txtConfirm.Text) { AuthUi.Warn(this,"Konfirmasi password tidak cocok."); txtConfirm.Focus(); return; }
+            try {
+                bool ok=_auth.Register(txtName.Text.Trim(),txtEmail.Text.Trim(),txtPassword.Text);
+                if(ok) { MessageBox.Show(this,"Registrasi berhasil, silakan login.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Information); Close(); }
+                else AuthUi.Warn(this,"Akun dengan email ini sudah ada.");
+            } catch(Exception ex) { System.Diagnostics.Debug.WriteLine(ex); MessageBox.Show(this,"Registrasi gagal. Periksa data dan koneksi Anda.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Error); }
         }
     }
 }
