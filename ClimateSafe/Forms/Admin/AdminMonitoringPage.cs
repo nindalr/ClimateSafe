@@ -2,21 +2,23 @@
 
 internal sealed class AdminMonitoringPage : BufferedPanel
 {
-    private const int FilterH = 120;
-    private const int SummaryH = 152;
+    private const int FilterH = 144;
     private const int TableHeadH = 72;
     private const int GridRowH = 44;
     private const int FooterH = 72;
     private const int StateH = 160;
     private const int CardPad = 24;
-    private const int CellPad = CardPad - 1;   // grid berada 1 px dari tepi kartu
+    private const int CellPad = CardPad - 1;
+    private const int ControlH = 40;
+    private const int SummaryNoteTop = 136;
 
-    // Segmen periode: pilihan aktif pil putih bergaris, pilihan lain tanpa pil.
+    private readonly int summaryH;
+
     private sealed class PeriodSelector : BufferedPanel
     {
         private readonly PillButton[] buttons;
-        private readonly Font activeFont = UI.Body(9.5f, FontStyle.Bold);
-        private readonly Font idleFont = UI.Body(9.5f, FontStyle.Regular);
+        private readonly Font activeFont = UI.Body(10.5f, FontStyle.Bold);
+        private readonly Font idleFont = UI.Body(10.5f, FontStyle.Regular);
         private int selected;
 
         public event EventHandler? SelectedChanged;
@@ -24,7 +26,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         public PeriodSelector(string[] labels)
         {
             BackColor = AdminUi.IdlePillBg;
-            Height = 36;
+            Height = ControlH;
             buttons = new PillButton[labels.Length];
 
             int x = 4;
@@ -36,13 +38,12 @@ internal sealed class AdminMonitoringPage : BufferedPanel
                     Radius = 8,
                     Font = activeFont,
                     FocusColor = AdminUi.Navy,
-                    Bounds = new Rectangle(x, 4, AdminUi.DrawnWidth(labels[i], 9.5f, FontStyle.Bold) + 28, 28)
+                    Bounds = new Rectangle(x, 4, AdminUi.DrawnWidth(labels[i], 10.5f, FontStyle.Bold) + 28, ControlH - 8)
                 };
                 int index = i;
                 button.Click += (_, _) => Select(index, true);
-                // Pilihan tidak aktif: teks Ink saat disorot, tanpa perubahan alas.
                 button.MouseEnter += (_, _) => { if (index != selected) Repaint(index, AdminUi.Ink); };
-                button.MouseLeave += (_, _) => { if (index != selected) Repaint(index, AdminUi.Muted); };
+                button.MouseLeave += (_, _) => { if (index != selected) Repaint(index, AdminUi.SubInk); };
                 Controls.Add(button);
                 buttons[i] = button;
                 x = button.Right + 4;
@@ -69,7 +70,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
                 buttons[i].Font = on ? activeFont : idleFont;
                 buttons[i].Fill = on ? Color.White : AdminUi.IdlePillBg;
                 buttons[i].HoverFill = on ? Color.White : AdminUi.IdlePillBg;
-                buttons[i].TextColor = on ? AdminUi.Ink : AdminUi.Muted;
+                buttons[i].TextColor = on ? AdminUi.Ink : AdminUi.SubInk;
                 buttons[i].BorderColor = on ? AdminUi.Line : Color.Empty;
                 buttons[i].Invalidate();
             }
@@ -77,7 +78,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         }
     }
 
-    private readonly ComboBox hazards = new() { DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = nameof(ApiHazard.Name) };
+    private readonly AdminDropdown hazards = new() { Format = o => ((ApiHazard)o).Name };
     private readonly PeriodSelector periods = new(new[] { "Hari ini", "7 hari terakhir", "30 hari terakhir" });
     private readonly DataGridView grid = new();
     private readonly RoundPanel[] summaryCards = new RoundPanel[3];
@@ -93,48 +94,61 @@ internal sealed class AdminMonitoringPage : BufferedPanel
     private int requestVersion;
     private bool ready;
 
+    private static int TextH(float size, FontStyle style)
+    {
+        using (Font f = UI.Body(size, style))
+        {
+            return TextRenderer.MeasureText("Ag", f).Height;
+        }
+    }
+
+    private static Label AddAt(Control parent, string text, int left, int y, int w, int h,
+                               float size, bool bold, Color color)
+    {
+        int pad = AdminUi.TextPad(size, bold ? FontStyle.Bold : FontStyle.Regular);
+        return AdminUi.AddText(parent, text, left - pad, y, w + pad, h, size, bold, color);
+    }
+
     public AdminMonitoringPage()
     {
         BackColor = AdminUi.Bg;
         Width = AdminUi.PageMaxW;
-        AdminUi.AddText(this, "Admin / Log & Monitoring", 0, 5, 300, 18, 9f, false, AdminUi.Muted);
-        AdminUi.AddText(this, "Log & Monitoring", 0, 26, 600, 38, 19f, true, AdminUi.TitleBlue);
-        AdminUi.AddText(this, "Pantau akun pengguna dan asesmen yang selesai.", 0, 66, 800, 20, 9.5f, false, AdminUi.SubInk);
+        summaryH = SummaryNoteTop + TextH(10f, FontStyle.Regular) + CardPad;
 
-        // ---- kartu filter ----
+        AddAt(this, "Admin / Log & Monitoring", 0, 5, 300, 20, 10f, false, AdminUi.Muted);
+        AddAt(this, "Log & Monitoring", 0, 26, 600, 38, 19f, true, AdminUi.TitleBlue);
+        AddAt(this, "Pantau akun pengguna dan asesmen yang selesai.", 0, 66, 800, 24, 10f, false, AdminUi.SubInk);
+
         var filter = AdminUi.Card(this, 0, AdminUi.ContentTop, Width, FilterH, AdminUi.CardRadius, Color.White, AdminUi.Line);
         AdminUi.Stretch(filter, this, 0, 0);
 
-        AdminUi.AddText(filter, "Periode", CardPad, 20, 200, 20, 9.5f, true, AdminUi.Ink);
-        periods.Location = new Point(CardPad, 44);
+        AddAt(filter, "Periode", CardPad, 24, 200, 20, 10f, true, AdminUi.Ink);
+        periods.Location = new Point(CardPad, 52);
         filter.Controls.Add(periods);
 
         int hazardX = CardPad + periods.Width + AdminUi.Gap;
-        AdminUi.AddText(filter, "Jenis Bahaya", hazardX, 20, 200, 20, 9.5f, true, AdminUi.Ink);
-        StyleCombo();
-        hazards.Bounds = new Rectangle(hazardX, 44, 260, 36);
+        AddAt(filter, "Jenis Bahaya", hazardX, 24, 260, 20, 10f, true, AdminUi.Ink);
+        hazards.Bounds = new Rectangle(hazardX, 52, 260, ControlH);
         filter.Controls.Add(hazards);
 
-        AdminUi.AddText(filter, "Periode menggunakan WIB", CardPad, 88, 400, 18, 9f, false, AdminUi.Muted);
+        AddAt(filter, "Periode menggunakan WIB", CardPad, 100, 400, 20, 10f, false, AdminUi.Muted);
 
-        // ---- tiga kartu ringkasan ----
         int summaryTop = AdminUi.ContentTop + FilterH + AdminUi.Gap;
         summaryValues[0] = MakeSummary(0, summaryTop, Ico.People, "Total Pengguna", "Semua waktu");
         summaryValues[1] = MakeSummary(1, summaryTop, Ico.Check, "Pengguna Aktif", "Status akun Aktif");
         summaryValues[2] = MakeSummary(2, summaryTop, Ico.List, "Asesmen Selesai", "Sesuai filter");
 
-        // ---- kartu tabel ----
-        int tableTop = summaryTop + SummaryH + AdminUi.Gap;
+        int tableTop = summaryTop + summaryH + AdminUi.Gap;
         tableCard = AdminUi.Card(this, 0, tableTop, Width, TableHeadH + GridRowH + StateH + 24, AdminUi.CardRadius,
             Color.White, AdminUi.Line);
         tableCard.ClipRegion = true;
         AdminUi.Stretch(tableCard, this, 0, 0);
 
-        AdminUi.AddText(tableCard, "Riwayat Asesmen", CardPad, 20, 320, 24, 11f, true, AdminUi.TitleBlue);
-        AdminUi.AddText(tableCard, "Asesmen terbaru sesuai periode dan jenis bahaya yang dipilih.",
-            CardPad, 46, 520, 18, 9f, false, AdminUi.Muted);
+        AddAt(tableCard, "Riwayat Asesmen", CardPad, 16, 320, 26, 11f, true, AdminUi.TitleBlue);
+        AddAt(tableCard, "Asesmen terbaru sesuai periode dan jenis bahaya yang dipilih.",
+            CardPad, 44, 560, 20, 10f, false, AdminUi.Muted);
 
-        var reload = AdminUi.MakeButton(tableCard, "Muat Ulang", Width - CardPad - 120, 20, 36,
+        var reload = AdminUi.MakeButton(tableCard, "Muat Ulang", Width - CardPad - 120, 18, 36,
             AdminButtonKind.Secondary, 9.5f, 32);
         reload.Left = Width - CardPad - reload.Width;
         AdminUi.PinRight(reload, tableCard, CardPad);
@@ -148,7 +162,6 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         tableCard.Controls.Add(grid);
         AdminUi.Stretch(grid, tableCard, 1, 1);
 
-        // Satu teks di tengah badan tabel untuk state memuat, kosong, dan gagal.
         state = AdminUi.AddAligned(tableCard, "Memuat data...", 1, TableHeadH + GridRowH, Width - 2, StateH,
             10f, false, AdminUi.Muted, ContentAlignment.MiddleCenter);
         AdminUi.Stretch(state, tableCard, 1, 1);
@@ -157,8 +170,8 @@ internal sealed class AdminMonitoringPage : BufferedPanel
             AdminButtonKind.Secondary, 9.5f, 32);
         next = AdminUi.MakeButton(tableCard, "Berikutnya", previous.Right + 12, previous.Top, 36,
             AdminButtonKind.Secondary, 9.5f, 32);
-        pageLabel = AdminUi.AddText(tableCard, "Halaman 1 dari 1", next.Right + 16, previous.Top + 9, 240, 20,
-            9f, false, AdminUi.SubInk);
+        pageLabel = AddAt(tableCard, "Halaman 1 dari 1", next.Right + 16, previous.Top + 8, 240, 20,
+            10f, false, AdminUi.SubInk);
 
         previous.Click += async (_, _) => { if (page > 1) { page--; await LoadReportAsync(); } };
         next.Click += async (_, _) => { if ((long)page * pageSize < resultCount) { page++; await LoadReportAsync(); } };
@@ -171,25 +184,20 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         HandleCreated += async (_, _) => { if (!ready) await InitializeAsync(); };
     }
 
-    // Susunan kartu: ikon, angka, judul, keterangan. Semua teks bertepi kiri sama
-    // dengan kotak ikon; padding gambar Label dikompensasi lewat AdminUi.TextPad.
     private Label MakeSummary(int index, int top, string glyph, string caption, string note)
     {
         int cardW = (Width - AdminUi.Gap * 2) / 3;
         int textW = cardW - CardPad * 2;
-        var card = AdminUi.Card(this, index * (cardW + AdminUi.Gap), top, cardW, SummaryH,
+        var card = AdminUi.Card(this, index * (cardW + AdminUi.Gap), top, cardW, summaryH,
             AdminUi.CardRadius, Color.White, AdminUi.Line);
         summaryCards[index] = card;
 
         var iconBox = AdminUi.Card(card, CardPad, CardPad, 40, 40, 10, AdminUi.IconBlue, Color.Empty);
         AdminUi.AddSymbol(iconBox, glyph, 0, 0, 40, 40, 13f, AdminUi.Navy);
 
-        Label value = AdminUi.AddText(card, "–", CardPad - AdminUi.TextPad(20f, FontStyle.Bold), 76,
-            textW, 34, 20f, true, AdminUi.TitleBlue);
-        AdminUi.AddText(card, caption, CardPad - AdminUi.TextPad(10f, FontStyle.Regular), 110,
-            textW, 20, 10f, false, AdminUi.SubInk);
-        AdminUi.AddText(card, note, CardPad - AdminUi.TextPad(9f, FontStyle.Regular), 132,
-            textW, 16, 9f, false, AdminUi.Muted);
+        Label value = AddAt(card, "–", CardPad, 72, textW, TextH(20f, FontStyle.Bold), 20f, true, AdminUi.TitleBlue);
+        AddAt(card, caption, CardPad, 112, textW, TextH(10f, FontStyle.Regular), 10f, false, AdminUi.SubInk);
+        AddAt(card, note, CardPad, SummaryNoteTop, textW, TextH(10f, FontStyle.Regular), 10f, false, AdminUi.Muted);
         return value;
     }
 
@@ -201,7 +209,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         {
             if (summaryCards[i] == null) continue;
             int left = i * (cardW + AdminUi.Gap);
-            summaryCards[i].SetBounds(left, summaryCards[i].Top, i == 2 ? w - left : cardW, SummaryH);
+            summaryCards[i].SetBounds(left, summaryCards[i].Top, i == 2 ? w - left : cardW, summaryH);
         }
         LayoutTable();
     }
@@ -212,8 +220,6 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         int headerH = grid.ColumnHeadersHeight;
         grid.Height = hasRows ? headerH + grid.Rows.Count * GridRowH : headerH;
 
-        // Tanpa baris: satu teks state setinggi StateH menggantikan badan tabel dan
-        // baris penomoran halaman disembunyikan.
         state.Visible = !hasRows;
         state.Top = TableHeadH + headerH;
         previous.Visible = next.Visible = pageLabel.Visible = hasRows;
@@ -223,7 +229,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         {
             previous.Top = bodyBottom + 20;
             next.Top = previous.Top;
-            pageLabel.Top = previous.Top + 9;
+            pageLabel.Top = previous.Top + 8;
         }
 
         tableCard.Height = bodyBottom + (hasRows ? FooterH : CardPad);
@@ -256,7 +262,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         grid.ColumnHeadersDefaultCellStyle.ForeColor = AdminUi.Muted;
         grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = AdminUi.BandBg;
         grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = AdminUi.Muted;
-        grid.ColumnHeadersDefaultCellStyle.Font = UI.Body(9f, FontStyle.Bold);
+        grid.ColumnHeadersDefaultCellStyle.Font = UI.Body(10f, FontStyle.Bold);
         grid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
         grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(CellPad, 0, 0, 0);
 
@@ -285,31 +291,6 @@ internal sealed class AdminMonitoringPage : BufferedPanel
         grid.Columns[4].HeaderCell.Style.Padding = new Padding(CellPad, 0, CellPad, 0);
     }
 
-    // ComboBox digambar sendiri agar tinggi 36 px dan warnanya sama dengan kartu.
-    private void StyleCombo()
-    {
-        hazards.FlatStyle = FlatStyle.Flat;
-        hazards.BackColor = Color.White;
-        hazards.ForeColor = AdminUi.Ink;
-        hazards.Font = UI.Body(10f, FontStyle.Regular);
-        hazards.IntegralHeight = false;
-        hazards.DrawMode = DrawMode.OwnerDrawFixed;
-        hazards.ItemHeight = 30;
-        hazards.DrawItem += (_, e) =>
-        {
-            if (e.Index < 0) return;
-            bool on = (e.State & DrawItemState.Selected) != 0;
-            using (var b = new SolidBrush(on ? AdminUi.IconBlue : Color.White))
-            {
-                e.Graphics.FillRectangle(b, e.Bounds);
-            }
-            string text = (hazards.Items[e.Index] as ApiHazard)?.Name ?? "";
-            TextRenderer.DrawText(e.Graphics, text, hazards.Font,
-                new Rectangle(e.Bounds.X + 8, e.Bounds.Y, e.Bounds.Width - 12, e.Bounds.Height),
-                AdminUi.Ink, TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-        };
-    }
-
     private void SetState(string text, bool error)
     {
         state.Text = text;
@@ -326,7 +307,7 @@ internal sealed class AdminMonitoringPage : BufferedPanel
             var items = await Task.Run(() => ApiClient.Get<List<ApiHazard>>("api/hazards") ?? new());
             if (IsDisposed || version != requestVersion) return;
             items.Insert(0, new ApiHazard(0, "Semua Bahaya"));
-            hazards.DataSource = items;
+            hazards.SetItems(items.Cast<object>());
             ready = true;
             await LoadReportAsync();
         }
