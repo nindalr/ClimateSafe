@@ -1671,8 +1671,8 @@ namespace ClimateSafe
 
             // Satu aksi utama di layar: gaya tombol utama (coral penuh, teks putih).
             RoundButton start = MakeButton(card, "Mulai Asesmen", 21, 66, rw - 42, 45,
-                Theme.CtaFill, Theme.CtaHover, Color.White, Color.Empty, 10, 10f);
-            start.PressedFill = Theme.CtaPressed;
+                Theme.CtaBtnFill, Theme.CtaBtnHover, Theme.CtaBtnText, Color.Empty, 10, 10f);
+            start.PressedFill = Theme.CtaBtnPressed;
             Stretch(start, card, 21, 21);
             start.Click += delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); };
 
@@ -1797,12 +1797,16 @@ namespace ClimateSafe
                 Color.FromArgb(254, 240, 236), Color.Empty, 0f, Color.FromArgb(249, 214, 206));
             Stretch(box, parent, 20, 20);
 
-            // Isi coral CTA: kontras teks putih 4,87:1. Angkanya digambar sendiri supaya
-            // benar-benar berada di tengah lingkaran.
-            RoundPanel badge = Card(box, 16, (boxH - 24) / 2, 24, 24, 12, Theme.CtaFill, Color.Empty);
+            // Lingkaran putih bergaris coral; angka coral CTA (kontras 4,87:1) digambar
+            // sendiri supaya benar-benar berada di tengah lingkaran.
+            RoundPanel badge = Card(box, 16, (boxH - 24) / 2, 24, 24, 12, Color.White, Color.Empty);
             badge.Decorate = delegate (Graphics g, Rectangle bounds)
             {
-                DrawCentered(g, number, UI.FontName, 9.75f, FontStyle.Bold, Color.White, 24, 24);
+                using (Pen pen = new Pen(Theme.Coral, 1.5f))
+                {
+                    g.DrawEllipse(pen, 0.75f, 0.75f, 22.5f, 22.5f);
+                }
+                DrawCentered(g, number, UI.FontName, 9.75f, FontStyle.Bold, Theme.CtaFill, 24, 24);
             };
 
             // Nama dimensi tidak ada pada data checklist yang dimuat Beranda, jadi teks

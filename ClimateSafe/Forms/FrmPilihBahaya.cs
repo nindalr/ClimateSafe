@@ -501,11 +501,11 @@ namespace ClimateSafe
             PillButton next = new PillButton();
             next.Text = "Lanjutkan  \u2192";
             next.Radius = 10;
-            next.Fill = Theme.CtaFill;
-            next.HoverFill = Theme.CtaHover;
-            next.PressedFill = Theme.CtaPressed;
-            next.TextColor = Color.White;
-            next.FocusColor = Color.White;
+            next.Fill = Theme.CtaBtnFill;
+            next.HoverFill = Theme.CtaBtnHover;
+            next.PressedFill = Theme.CtaBtnPressed;
+            next.TextColor = Theme.CtaBtnText;
+            next.FocusColor = Theme.CtaBtnText;
             next.Font = UI.Body(10f, FontStyle.Bold);
             next.Bounds = new Rectangle(PageMaxW - 24 - buttonW, 13, buttonW, 45);
             card.Controls.Add(next);
