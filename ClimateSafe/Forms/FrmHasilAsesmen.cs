@@ -683,8 +683,9 @@ namespace ClimateSafe
             home.Font = UI.Body(10f, FontStyle.Bold);
             if (onlyHome)
             {
-                home.Fill = coral;
-                home.HoverFill = coralHover;
+                home.Fill = Theme.CtaFill;
+                home.HoverFill = Theme.CtaHover;
+                home.PressedFill = Theme.CtaPressed;
                 home.TextColor = Color.White;
                 home.FocusColor = Color.White;
                 homeW = Measure("Kembali ke Beranda", 10f, FontStyle.Bold) + 48;
@@ -712,8 +713,9 @@ namespace ClimateSafe
             PillButton next = new PillButton();
             next.Text = "Buka Checklist  →";
             next.Radius = 10;
-            next.Fill = coral;
-            next.HoverFill = coralHover;
+            next.Fill = Theme.CtaFill;
+            next.HoverFill = Theme.CtaHover;
+            next.PressedFill = Theme.CtaPressed;
             next.TextColor = Color.White;
             next.FocusColor = Color.White;
             next.Font = UI.Body(10f, FontStyle.Bold);
