@@ -10,13 +10,57 @@ using System.Windows.Forms;
 
 namespace ClimateSafe
 {
+    // Kode glyph font ikon Windows (Segoe Fluent Icons / Segoe MDL2 Assets, kode sama).
+    // Bila hanya Segoe UI Symbol tersedia, glyph lama dipakai sebagai cadangan.
+    internal static class Ico
+    {
+        private static string Pick(string icon, string legacy)
+        {
+            return UI.LegacyIcons ? legacy : icon;
+        }
+
+        public static string Home { get { return Pick("\uE80F", "\u2302"); } }
+        public static string Edit { get { return Pick("\uE70F", "\u270E"); } }
+        public static string Star { get { return Pick("\uE734", "\u2606"); } }
+        public static string CheckBox { get { return Pick("\uE73A", "\u2611"); } }
+        public static string Check { get { return Pick("\uE73E", "\u2714"); } }
+        public static string History { get { return Pick("\uE81C", "\u21BA"); } }
+        public static string Library { get { return Pick("\uE8F1", "\u25A4"); } }
+        public static string People { get { return Pick("\uE716", "\u263A"); } }
+        public static string Page { get { return Pick("\uE7C3", "\u25A4"); } }
+        public static string Report { get { return Pick("\uE9D9", "\u21BA"); } }
+        public static string List { get { return Pick("\uE8FD", "\u2630"); } }
+        public static string Rain { get { return Pick("\uE9CA", "\u2248"); } }
+        public static string Storm { get { return Pick("\uE945", "\u2602"); } }
+        public static string Sun { get { return Pick("\uE706", "\u2600"); } }
+        public static string Tools { get { return Pick("\uE90F", "\u2692"); } }
+        public static string Route { get { return Pick("\uE72A", "\u27A4"); } }
+        public static string Phone { get { return Pick("\uE717", "\u260E"); } }
+        public static string Info { get { return Pick("\uE946", "\u2139"); } }
+        public static string Clock { get { return Pick("\uE823", "\u25F7"); } }
+        public static string Calendar { get { return Pick("\uE787", "\u25A3"); } }
+        public static string Warning { get { return Pick("\uE7BA", "\u26A0"); } }
+        public static string Bolt { get { return Pick("\uE945", "\u26A1"); } }
+        public static string Lock { get { return Pick("\uE72E", "\U0001F512"); } }
+    }
+
     internal static class UI
     {
-        public static readonly string FontName = PickFontName();
+        public static readonly string FontName = PickFontName(
+            new[] { "Plus Jakarta Sans", "Inter", "Segoe UI" }, "Segoe UI");
 
-        private static string PickFontName()
+        // Font ikon dipilih sekali untuk seluruh aplikasi: Segoe Fluent Icons (Windows 11),
+        // lalu Segoe MDL2 Assets (Windows 10), lalu Segoe UI Symbol sebagai cadangan.
+        public static readonly string IconFontName = PickFontName(
+            new[] { "Segoe Fluent Icons", "Segoe MDL2 Assets", "Segoe UI Symbol" }, "Segoe UI Symbol");
+
+        public static bool LegacyIcons
         {
-            string[] candidates = { "Plus Jakarta Sans", "Inter", "Segoe UI" };
+            get { return IconFontName == "Segoe UI Symbol"; }
+        }
+
+        private static string PickFontName(string[] candidates, string fallback)
+        {
             try
             {
                 using (InstalledFontCollection fc = new InstalledFontCollection())
@@ -34,7 +78,7 @@ namespace ClimateSafe
             catch (Exception)
             {
             }
-            return "Segoe UI";
+            return fallback;
         }
 
         public static Font MakeFont(string name, float size, FontStyle style)
@@ -443,7 +487,7 @@ namespace ClimateSafe
             }
             if (!string.IsNullOrEmpty(BadgeGlyph))
             {
-                using (Font bf = UI.MakeFont("Segoe UI Symbol", BadgeFontSize, FontStyle.Regular))
+                using (Font bf = UI.MakeFont(UI.IconFontName, BadgeFontSize, FontStyle.Regular))
                 {
                     TextRenderer.DrawText(g, BadgeGlyph, bf, badge, BadgeColor,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
@@ -695,7 +739,8 @@ namespace ClimateSafe
 
         public static void ShowRiwayat(Form from)
         {
-            if (Session.CurrentUser == null)
+            // Tamu boleh membuka Riwayat: halaman menampilkan kartu Mode Tamu.
+            if (Session.CurrentUser == null && !Session.IsGuest)
             {
                 MessageBox.Show(from, "Silakan login untuk membuka riwayat.", "Riwayat");
                 return;
@@ -1146,7 +1191,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -1297,7 +1342,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "\u2302", "\u270E", "\u2606", "\u2611", "\u21BA", "\u25A4" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -1363,8 +1408,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -1373,7 +1437,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;
@@ -1438,13 +1502,16 @@ namespace ClimateSafe
             int dateW = 34 + LabelWidth(tanggal, 8.5f, FontStyle.Regular) + 12;
             RoundPanel dateCard = Card(dashHeader, PageMaxW - 30 - 147 - 12 - dateW, 64, dateW, 32, 16,
                 Color.White, pillBorder);
-            AddSymbol(dateCard, "\u25A3", 10, 0, 20, 32, 10f, muted);
+            AddSymbol(dateCard, Ico.Calendar, 10, 0, 20, 32, 10f, muted);
             AddAligned(dateCard, tanggal, 34, 0, dateW - 46, 32, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
 
             RoundPanel weatherCard = Card(dashHeader, PageMaxW - 30 - 147, 64, 147, 32, 16,
                 Color.White, pillBorder);
-            weatherIcon = AddSymbol(weatherCard, "?", 10, 0, 20, 32, 10f, Color.FromArgb(240, 170, 40));
+            // Ikon cuaca datang dari WeatherService (karakter ☀ ☁ ☂ ❄), jadi label ini
+            // tetap memakai Segoe UI Symbol, bukan font ikon aplikasi.
+            weatherIcon = NewLabel(weatherCard, "?", 10, 0, 20, 32, 10f, FontStyle.Regular,
+                Color.FromArgb(240, 170, 40), ContentAlignment.MiddleCenter, "Segoe UI Symbol");
             weatherLabel = AddAligned(weatherCard, "Memuat cuaca...", 34, 0, 110, 32, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             weatherDetails = AddAligned(dashHeader, "Sumber: Open-Meteo", PageMaxW - 30 - 147, 98,
@@ -1575,7 +1642,7 @@ namespace ClimateSafe
             RoundPanel card = Card(pageHost, cw + Gap, RowTopY, rw, RowTopH, 16, Color.White, line);
             cardQuick = card;
 
-            IconBox(card, "\u26A1", 21, 22, 28, iconBlue, navy);
+            IconBox(card, Ico.Bolt, 21, 22, 28, iconBlue, navy);
             AddAligned(card, "Aksi Cepat", 57, 22, 200, 22, 10.5f, true, ink, ContentAlignment.MiddleLeft);
 
             // Satu aksi utama di layar: gaya tombol utama (coral penuh, teks putih).
@@ -1585,7 +1652,7 @@ namespace ClimateSafe
             Stretch(start, card, 21, 21);
             start.Click += delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); };
 
-            AddActionItem(card, 127, "\u2606", "Lihat Rekomendasi", "Dapatkan saran sesuai hasilmu",
+            AddActionItem(card, 127, Ico.Star, "Lihat Rekomendasi", "Dapatkan saran sesuai hasilmu",
                 delegate (object sender, EventArgs e) { Nav.ShowRekomendasi(this); });
 
             Stretch(Divider(card, 21, 210, C3 - 42), card, 21, 21);
@@ -1614,7 +1681,7 @@ namespace ClimateSafe
             RoundPanel card = Card(pageHost, 0, RowBottomY, cw, RowBottomH, 16, Color.White, line);
             cardChecklist = card;
 
-            IconBox(card, "\u2611", 20, 23, 28, iconBlue, navy);
+            IconBox(card, Ico.CheckBox, 20, 23, 28, iconBlue, navy);
             AddText(card, "Progress Checklist Persiapan", 62, 23, 360, 30, 10.5f, true, ink);
             AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 8.5f,
                 false, muted);
@@ -1659,7 +1726,7 @@ namespace ClimateSafe
             RoundPanel card = Card(pageHost, cw + Gap, RowBottomY, pw, RowBottomH, 16, Color.White, line);
             cardPriority = card;
 
-            IconBox(card, "\u26A0", 20, 31, 28, coralSoft, coral);
+            IconBox(card, Ico.Warning, 20, 31, 28, coralSoft, coral);
             AddText(card, "Prioritas Utama", 64, 23, 300, 30, 10.5f, true, ink);
 
             string prioritySubtitle = "Dari hasil asesmen terakhir, yang perlu kamu perhatikan.";
@@ -1705,20 +1772,20 @@ namespace ClimateSafe
 
         private void BuildHazards(Panel pageHost)
         {
-            IconBox(pageHost, "\u25A4", 0, HazardTitleY + 1, 28, iconBlue, navy);
+            IconBox(pageHost, Ico.Library, 0, HazardTitleY + 1, 28, iconBlue, navy);
             AddText(pageHost, "Informasi Bahaya Iklim", 41, HazardTitleY, 400, 24, 12f, true, titleBlue);
             AddText(pageHost, "Kenali jenis bahaya iklim dan langkah mitigasi terbaik.",
                 41, HazardTitleY + 25, 450, 18, 8.5f, false, muted);
 
             // Nama bahaya dari satu sumber (FrmAssessment.hazardNames), deskripsi dari
             // materi Edukasi lewat API (EducationSummary), tujuan klik = halaman Edukasi.
-            AddHazard(pageHost, 0, 0, FrmAssessment.hazardNames[0], "\U0001F30A", "\u2248",
+            AddHazard(pageHost, 0, 0, FrmAssessment.hazardNames[0], "\U0001F30A", Ico.Rain,
                 Color.FromArgb(112, 132, 146), Color.FromArgb(60, 78, 92), "banjir");
 
-            AddHazard(pageHost, 1, C3 + Gap, FrmAssessment.hazardNames[1], "\u26C8", "\u2602",
+            AddHazard(pageHost, 1, C3 + Gap, FrmAssessment.hazardNames[1], "\u26C8", Ico.Storm,
                 Color.FromArgb(92, 80, 120), Color.FromArgb(34, 30, 56), "cuaca");
 
-            AddHazard(pageHost, 2, 2 * (C3 + Gap), FrmAssessment.hazardNames[2], "\u2600", "\u2600",
+            AddHazard(pageHost, 2, 2 * (C3 + Gap), FrmAssessment.hazardNames[2], "\u2600", Ico.Sun,
                 Color.FromArgb(120, 180, 235), Color.FromArgb(70, 120, 175), "panas");
         }
 
@@ -1734,7 +1801,7 @@ namespace ClimateSafe
             pic.Bounds = new Rectangle(1, 1, C3 - 2, HazardPicH);
             pic.EmojiSize = 26f;
             pic.BadgeSize = 22;
-            pic.BadgeFontSize = 8.5f;
+            pic.BadgeFontSize = 9.75f;
             pic.ColorTop = top;
             pic.ColorBottom = bottom;
             pic.Emoji = emoji;

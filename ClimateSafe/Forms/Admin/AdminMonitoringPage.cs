@@ -119,9 +119,9 @@ internal sealed class AdminMonitoringPage : BufferedPanel
 
         // ---- tiga kartu ringkasan ----
         int summaryTop = AdminUi.ContentTop + FilterH + AdminUi.Gap;
-        summaryValues[0] = MakeSummary(0, summaryTop, "☺", "Total Pengguna", "Semua waktu");
-        summaryValues[1] = MakeSummary(1, summaryTop, "✔", "Pengguna Aktif", "Status akun Aktif");
-        summaryValues[2] = MakeSummary(2, summaryTop, "▤", "Asesmen Selesai", "Sesuai filter");
+        summaryValues[0] = MakeSummary(0, summaryTop, Ico.People, "Total Pengguna", "Semua waktu");
+        summaryValues[1] = MakeSummary(1, summaryTop, Ico.Check, "Pengguna Aktif", "Status akun Aktif");
+        summaryValues[2] = MakeSummary(2, summaryTop, Ico.List, "Asesmen Selesai", "Sesuai filter");
 
         // ---- kartu tabel ----
         int tableTop = summaryTop + SummaryH + AdminUi.Gap;

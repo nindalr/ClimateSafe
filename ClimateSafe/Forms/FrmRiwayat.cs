@@ -630,7 +630,8 @@ namespace ClimateSafe
             if (Visible && riwBuilt)
             {
                 RefreshUserCard();
-                LoadSessions();
+                // Mode Tamu: tidak ada riwayat tersimpan, jadi data tidak dimuat.
+                if (!Session.IsGuest) LoadSessions();
             }
         }
 
@@ -690,7 +691,8 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
-            LoadSessions();
+            if (Session.IsGuest) BuildGuestContent();
+            else LoadSessions();
         }
 
         private void LayoutPage()
@@ -1228,6 +1230,88 @@ namespace ClimateSafe
             return h;
         }
 
+        // ---------- mode tamu ----------
+
+        // Tamu tidak punya riwayat tersimpan: satu kartu penjelasan, tanpa panggilan service.
+        private void BuildGuestContent()
+        {
+            rowViews.Clear();
+            listCard = null;
+            detailPanel = null;
+            cardFooter = null;
+
+            if (content != null)
+            {
+                riwPage.Controls.Remove(content);
+                content.Dispose();
+                content = null;
+            }
+
+            int w = Math.Max(PageMinW, riwPage.Width);
+
+            BufferedPanel host = new BufferedPanel();
+            host.BackColor = bg;
+            host.Bounds = new Rectangle(0, ContentTop, w, 100);
+            host.TabIndex = 1;
+            riwPage.Controls.Add(host);
+            content = host;
+
+            host.Height = BuildGuestCard(host);
+            riwPage.Height = ContentTop + host.Height + 64;
+        }
+
+        private int BuildGuestCard(BufferedPanel host)
+        {
+            const int pad = 64;
+            int w = host.Width;
+
+            List<string> titleLines;
+            using (Font f = UI.Body(15f, FontStyle.Bold))
+            {
+                titleLines = WrapLines("Riwayat hanya tersedia untuk pengguna yang login", f, w - pad * 2);
+            }
+
+            int h = pad + 64 + 24 + titleLines.Count * 28 + 16 + 24 + 32 + 44 + pad;
+
+            RoundPanel card = Card(host, 0, 0, w, h, 16, Color.White, line);
+            Stretch(card, host, 0, 0);
+
+            RoundPanel iconBox = Card(card, (w - 64) / 2, pad, 64, 64, 16, iconBlue, Color.Empty);
+            AddSymbol(iconBox, Ico.Lock, 0, 0, 64, 64, 20f, navy);
+            CenterIn(iconBox, card);
+
+            int ty = pad + 64 + 24;
+            for (int i = 0; i < titleLines.Count; i++)
+            {
+                Label titleLine = AddAligned(card, titleLines[i], 0, ty + i * 28, w, 28, 15f, true, titleBlue,
+                    ContentAlignment.MiddleCenter);
+                Stretch(titleLine, card, 0, 0);
+            }
+
+            int sy = ty + titleLines.Count * 28 + 16;
+            Label note = AddAligned(card, "Di Mode Tamu, hasil asesmen tidak disimpan.", 0, sy, w, 24,
+                10.5f, false, muted, ContentAlignment.MiddleCenter);
+            Stretch(note, card, 0, 0);
+
+            // Kelas dan ukuran sama dengan CTA "Lanjutkan" di Pilih Bahaya.
+            int buttonW = Math.Max(160, Measure("Masuk atau Daftar  \u2192", 10f, FontStyle.Bold) + 48);
+            PillButton login = new PillButton();
+            login.Text = "Masuk atau Daftar  \u2192";
+            login.Bounds = new Rectangle((w - buttonW) / 2, sy + 24 + 32, buttonW, 44);
+            login.Radius = 10;
+            login.Fill = Theme.CtaFill;
+            login.HoverFill = Theme.CtaHover;
+            login.PressedFill = Theme.CtaPressed;
+            login.TextColor = Color.White;
+            login.FocusColor = Color.White;
+            login.Font = UI.Body(10f, FontStyle.Bold);
+            card.Controls.Add(login);
+            CenterIn(login, card);
+            login.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
+
+            return h;
+        }
+
         // ---------- helper ----------
 
         private static int Measure(string text, float size, FontStyle style)
@@ -1276,7 +1360,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -1382,7 +1466,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -1448,8 +1532,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -1458,7 +1561,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;

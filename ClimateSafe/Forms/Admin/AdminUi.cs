@@ -106,7 +106,7 @@ namespace ClimateSafe
                                       float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular, color,
-                ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         // Lebar teks seperti cara Label menggambar (padding bawaan TextRenderer).

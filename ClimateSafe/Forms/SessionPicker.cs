@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -116,9 +116,9 @@ namespace ClimateSafe
 
                     if (selected)
                     {
-                        using (Font f = UI.MakeFont("Segoe UI Symbol", 10.5f, FontStyle.Regular))
+                        using (Font f = UI.MakeFont(UI.IconFontName, 10.5f, FontStyle.Regular))
                         {
-                            TextRenderer.DrawText(g, "✓", f,
+                            TextRenderer.DrawText(g, Ico.Check, f,
                                 new Rectangle(row.Right - PadX - 24, row.Y, 24, row.Height), Navy,
                                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                                 TextFormatFlags.NoPadding);
