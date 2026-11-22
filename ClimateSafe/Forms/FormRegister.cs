@@ -29,7 +29,11 @@ namespace ClimateSafe.Auth
             if(txtPassword.Text!=txtConfirm.Text) { AuthUi.Warn(this,"Konfirmasi password tidak cocok."); txtConfirm.Focus(); return; }
             try {
                 bool ok=_auth.Register(txtName.Text.Trim(),txtEmail.Text.Trim(),txtPassword.Text);
-                if(ok) { MessageBox.Show(this,"Registrasi berhasil, silakan login.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Information); Close(); }
+                if(ok) {
+                    RecentAccounts.Add(txtEmail.Text.Trim());
+                    MessageBox.Show(this,"Registrasi berhasil, silakan login.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Information);
+                    Close();
+                }
                 else AuthUi.Warn(this,"Akun dengan email ini sudah ada.");
             } catch(Exception ex) { System.Diagnostics.Debug.WriteLine(ex); MessageBox.Show(this,"Registrasi gagal. Periksa data dan koneksi Anda.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Error); }
         }

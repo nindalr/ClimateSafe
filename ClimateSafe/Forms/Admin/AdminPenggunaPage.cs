@@ -70,7 +70,7 @@ namespace ClimateSafe
         private TextBox BuildSearchRow()
         {
             TextBox input = AdminUi.MakeField(this, 0, SearchTop, 420,
-                "Cari berdasarkan nama atau email");
+                "Cari berdasarkan nama atau email", true);
             input.TextChanged += delegate (object? s, EventArgs e) { RebuildBody(); };
 
             PillButton reload = AdminUi.MakeButton(this, "Muat Ulang", 0, SearchTop, AdminUi.FieldH,
@@ -198,7 +198,7 @@ namespace ClimateSafe
                     else
                     {
                         y = BuildListCard(host, y, visible);
-                        if (banner != null) y = BuildBanner(host, y + AdminUi.Gap) ;
+                        if (banner != null) y = BuildBanner(host, y + AdminUi.Gap);
                         UserItem? selected = Find(selectedId);
                         if (selected != null) y = BuildActionCard(host, y + AdminUi.Gap, selected);
                     }
@@ -546,12 +546,19 @@ namespace ClimateSafe
         {
             using var dialog = new Form
             {
-                Text = "Reset Password", StartPosition = FormStartPosition.CenterParent,
-                ClientSize = new Size(420, 190), FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false, MinimizeBox = false
+                Text = "Reset Password",
+                StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(420, 190),
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false
             };
-            var instruction = new Label { Text = "Password baru untuk pengguna #" + item.Id,
-                Location = new Point(20, 18), AutoSize = true };
+            var instruction = new Label
+            {
+                Text = "Password baru untuk pengguna #" + item.Id,
+                Location = new Point(20, 18),
+                AutoSize = true
+            };
             var passwordLabel = new Label { Text = "Password baru", Location = new Point(20, 55), AutoSize = true };
             var password = new TextBox { Location = new Point(170, 52), Width = 225, UseSystemPasswordChar = true };
             var confirmLabel = new Label { Text = "Ulangi password", Location = new Point(20, 95), AutoSize = true };
