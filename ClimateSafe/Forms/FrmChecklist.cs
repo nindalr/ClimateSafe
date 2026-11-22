@@ -38,8 +38,10 @@ namespace ClimateSafe
                      ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw, true);
-            SetStyle(ControlStyles.Selectable, true);
-            TabStop = true;
+            // Baris checklist tidak menerima fokus: klik langsung mencentang,
+            // hanya efek hover, tanpa border.
+            SetStyle(ControlStyles.Selectable, false);
+            TabStop = false;
             BackColor = Color.White;
             Cursor = Cursors.Hand;
         }
@@ -77,12 +79,6 @@ namespace ClimateSafe
             base.OnMouseLeave(e);
             hovered = false;
             Invalidate();
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
-            Focus();
         }
 
         protected override void OnClick(EventArgs e)
@@ -171,13 +167,6 @@ namespace ClimateSafe
                 }
             }
 
-            if (Focused)
-            {
-                using (Pen p = new Pen(Navy, 2f))
-                {
-                    g.DrawRectangle(p, 1, 1, Width - 3, Height - 3);
-                }
-            }
         }
 
         // Kotak centang 24 radius 6. Digambar di sini agar TickBox milik Beranda tidak berubah.
@@ -212,22 +201,22 @@ namespace ClimateSafe
 
     internal sealed class FrmChecklist : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color coralInk = Color.FromArgb(159, 64, 51);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color btnBlue = Color.FromArgb(55, 108, 178);
-        private readonly Color btnBlueHover = Color.FromArgb(44, 94, 164);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color iconBlue = Color.FromArgb(226, 236, 250);
-        private readonly Color pillBlueBg = Color.FromArgb(228, 238, 247);
-        private readonly Color pillBlueInk = Color.FromArgb(47, 95, 148);
-        private readonly Color barTrack = Color.FromArgb(226, 234, 245);
-        private readonly Color emptyInk = Color.FromArgb(82, 102, 126);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color coralInk = Theme.CoralInk;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color btnBlue = Theme.BtnBlue;
+        private readonly Color btnBlueHover = Theme.BtnBlueHover;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color iconBlue = Theme.IconBlue;
+        private readonly Color pillBlueBg = Theme.PillBlueBg;
+        private readonly Color pillBlueInk = Theme.PillBlueInk;
+        private readonly Color barTrack = Theme.BarTrack;
+        private readonly Color emptyInk = Theme.EmptyInk;
 
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
@@ -357,14 +346,18 @@ namespace ClimateSafe
             {
                 int keep = PendingAssessmentId != 0 ? PendingAssessmentId : selectedAssessmentId;
                 PendingAssessmentId = 0;
-                IReadOnlyList<ChecklistSession> loaded = CurrentUserId == 0
+                IReadOnlyList<ChecklistSession> loaded = Session.IsGuest
+                    ? (GuestSessionView.GetChecklistSession() is ChecklistSession guest ? new List<ChecklistSession> { guest } : new List<ChecklistSession>())
+                    : CurrentUserId == 0
                     ? new List<ChecklistSession>()
                     : service.GetSessions(CurrentUserId);
 
                 sessions = loaded.ToList();
                 if (dimensionNames.Count == 0 && sessions.Count > 0)
                 {
-                    dimensionNames = recommendationRepository.GetDimensionNames();
+                    dimensionNames = Session.IsGuest
+                        ? GuestSessionView.GetDimensions().ToDictionary(d => d.DimensionId, d => d.DimensionName)
+                        : recommendationRepository.GetDimensionNames();
                 }
 
                 ChecklistSession? selected = sessions.FirstOrDefault(s => s.AssessmentId == keep)
@@ -391,7 +384,9 @@ namespace ClimateSafe
             bool wanted = !item.IsCompleted;
             try
             {
-                service.SetCompleted(CurrentUserId, item.ChecklistItemId, wanted);
+                if (Session.IsGuest)
+                    Session.GuestAssessment!.SetChecklistCompleted(item.ChecklistItemId, wanted);
+                else service.SetCompleted(CurrentUserId, item.ChecklistItemId, wanted);
                 LoadSessions();
             }
             catch (Exception ex)
@@ -921,7 +916,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -951,6 +946,20 @@ namespace ClimateSafe
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
             MakeClickable(user, openProfil);
             user.Activated += openProfil;
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
         }
 
         private Label sidebarName;

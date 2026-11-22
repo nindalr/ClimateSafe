@@ -1,0 +1,473 @@
+{
+  "version": "initial-001",
+  "hazards": [
+    {
+      "id": 1,
+      "name": "Banjir",
+      "questions": [
+        {
+          "dimensionId": 1,
+          "dimensionName": "Perlengkapan darurat",
+          "threshold": 75,
+          "text": "Apakah kamu sudah menyiapkan perlengkapan darurat untuk menghadapi banjir?",
+          "description": "Termasuk tas siaga bencana (grab bag) berisi dokumen penting, senter, air minum, dan obat darurat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah lengkap dan mudah dijangkau",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Sudah ada, tetapi belum lengkap",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan beberapa barang",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum menyiapkan sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Siapkan tas darurat dan simpan salinan dokumen penting dalam wadah kedap air."
+        },
+        {
+          "dimensionId": 2,
+          "dimensionName": "Jalur evakuasi",
+          "threshold": 75,
+          "text": "Apakah kamu tahu jalur evakuasi terdekat saat terjadi banjir?",
+          "description": "Termasuk titik kumpul terdekat, jalur aman, dan rute alternatif dari rumah maupun tempat kerja.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Hafal jalur dan titik kumpul, sudah pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Tahu jalurnya, tetapi belum pernah berlatih",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya tahu sebagian jalur",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum tahu sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Tentukan jalur evakuasi menuju tempat lebih tinggi dan hindari rute yang melewati genangan."
+        },
+        {
+          "dimensionId": 3,
+          "dimensionName": "Kontak darurat",
+          "threshold": 75,
+          "text": "Apakah kamu punya daftar kontak darurat untuk situasi banjir?",
+          "description": "Meliputi keluarga, tetangga, RT/RW, BPBD, puskesmas, dan layanan darurat setempat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Lengkap, tersimpan di ponsel dan dicetak",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi hanya tersimpan di ponsel",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya memiliki beberapa nomor",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum punya sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Catat kontak BPBD, petugas setempat, dan keluarga yang dapat dihubungi saat banjir."
+        },
+        {
+          "dimensionId": 4,
+          "dimensionName": "Rencana logistik",
+          "threshold": 75,
+          "text": "Apakah keluargamu punya rencana logistik menghadapi banjir?",
+          "description": "Termasuk air bersih, makanan tahan lama, obat rutin, dan kebutuhan khusus untuk minimal 3x24 jam.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah ada untuk 3x24 jam atau lebih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi kurang dari 3x24 jam",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan sebagian kecil",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum ada sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Rencanakan persediaan kebutuhan keluarga di tempat yang terlindung dari air banjir."
+        },
+        {
+          "dimensionId": 5,
+          "dimensionName": "Pengetahuan bencana",
+          "threshold": 75,
+          "text": "Seberapa paham kamu langkah penyelamatan saat banjir?",
+          "description": "Misalnya membaca peringatan dini BMKG, mengenali tanda bahaya, dan tahu apa yang harus dilakukan.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sangat paham dan pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Paham dasar-dasarnya",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Pernah mendengar, tetapi belum paham",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum paham sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Pelajari peringatan banjir serta prosedur evakuasi dari petugas setempat."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Cuaca Ekstrem",
+      "questions": [
+        {
+          "dimensionId": 1,
+          "dimensionName": "Perlengkapan darurat",
+          "threshold": 75,
+          "text": "Apakah kamu sudah menyiapkan perlengkapan darurat untuk menghadapi cuaca ekstrem?",
+          "description": "Termasuk tas siaga bencana (grab bag) berisi dokumen penting, senter, air minum, dan obat darurat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah lengkap dan mudah dijangkau",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Sudah ada, tetapi belum lengkap",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan beberapa barang",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum menyiapkan sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Siapkan senter, baterai cadangan, dan tas darurat untuk menghadapi gangguan listrik saat badai."
+        },
+        {
+          "dimensionId": 2,
+          "dimensionName": "Jalur evakuasi",
+          "threshold": 75,
+          "text": "Apakah kamu tahu jalur evakuasi terdekat saat terjadi cuaca ekstrem?",
+          "description": "Termasuk titik kumpul terdekat, jalur aman, dan rute alternatif dari rumah maupun tempat kerja.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Hafal jalur dan titik kumpul, sudah pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Tahu jalurnya, tetapi belum pernah berlatih",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya tahu sebagian jalur",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum tahu sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Tentukan bangunan kokoh sebagai tempat berlindung dan rute yang menghindari pohon serta papan reklame."
+        },
+        {
+          "dimensionId": 3,
+          "dimensionName": "Kontak darurat",
+          "threshold": 75,
+          "text": "Apakah kamu punya daftar kontak darurat untuk situasi cuaca ekstrem?",
+          "description": "Meliputi keluarga, tetangga, RT/RW, BPBD, puskesmas, dan layanan darurat setempat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Lengkap, tersimpan di ponsel dan dicetak",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi hanya tersimpan di ponsel",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya memiliki beberapa nomor",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum punya sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Simpan kontak petugas darurat, penyedia listrik, dan keluarga untuk situasi cuaca ekstrem."
+        },
+        {
+          "dimensionId": 4,
+          "dimensionName": "Rencana logistik",
+          "threshold": 75,
+          "text": "Apakah keluargamu punya rencana logistik menghadapi cuaca ekstrem?",
+          "description": "Termasuk air bersih, makanan tahan lama, obat rutin, dan kebutuhan khusus untuk minimal 3x24 jam.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah ada untuk 3x24 jam atau lebih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi kurang dari 3x24 jam",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan sebagian kecil",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum ada sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Rencanakan kebutuhan keluarga jika cuaca ekstrem menghambat perjalanan atau distribusi barang."
+        },
+        {
+          "dimensionId": 5,
+          "dimensionName": "Pengetahuan bencana",
+          "threshold": 75,
+          "text": "Seberapa paham kamu langkah penyelamatan saat cuaca ekstrem?",
+          "description": "Misalnya membaca peringatan dini BMKG, mengenali tanda bahaya, dan tahu apa yang harus dilakukan.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sangat paham dan pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Paham dasar-dasarnya",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Pernah mendengar, tetapi belum paham",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum paham sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Pelajari peringatan cuaca BMKG dan prosedur berlindung saat angin kencang atau petir."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Suhu Panas Ekstrem",
+      "questions": [
+        {
+          "dimensionId": 1,
+          "dimensionName": "Perlengkapan darurat",
+          "threshold": 75,
+          "text": "Apakah kamu sudah menyiapkan perlengkapan darurat untuk menghadapi suhu panas ekstrem?",
+          "description": "Termasuk tas siaga bencana (grab bag) berisi dokumen penting, senter, air minum, dan obat darurat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah lengkap dan mudah dijangkau",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Sudah ada, tetapi belum lengkap",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan beberapa barang",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum menyiapkan sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Siapkan wadah air minum dan perlengkapan pelindung dari sinar matahari saat bepergian."
+        },
+        {
+          "dimensionId": 2,
+          "dimensionName": "Jalur evakuasi",
+          "threshold": 75,
+          "text": "Apakah kamu tahu jalur evakuasi terdekat saat terjadi suhu panas ekstrem?",
+          "description": "Termasuk titik kumpul terdekat, jalur aman, dan rute alternatif dari rumah maupun tempat kerja.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Hafal jalur dan titik kumpul, sudah pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Tahu jalurnya, tetapi belum pernah berlatih",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya tahu sebagian jalur",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum tahu sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Tentukan tempat sejuk atau teduh yang dapat dijangkau saat suhu panas ekstrem."
+        },
+        {
+          "dimensionId": 3,
+          "dimensionName": "Kontak darurat",
+          "threshold": 75,
+          "text": "Apakah kamu punya daftar kontak darurat untuk situasi suhu panas ekstrem?",
+          "description": "Meliputi keluarga, tetangga, RT/RW, BPBD, puskesmas, dan layanan darurat setempat.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Lengkap, tersimpan di ponsel dan dicetak",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi hanya tersimpan di ponsel",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Hanya memiliki beberapa nomor",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum punya sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Catat kontak keluarga dan layanan darurat yang dapat dihubungi saat membutuhkan bantuan."
+        },
+        {
+          "dimensionId": 4,
+          "dimensionName": "Rencana logistik",
+          "threshold": 75,
+          "text": "Apakah keluargamu punya rencana logistik menghadapi suhu panas ekstrem?",
+          "description": "Termasuk air bersih, makanan tahan lama, obat rutin, dan kebutuhan khusus untuk minimal 3x24 jam.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sudah ada untuk 3x24 jam atau lebih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Ada, tetapi kurang dari 3x24 jam",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Baru menyiapkan sebagian kecil",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum ada sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Rencanakan ketersediaan air minum dan kebutuhan anggota keluarga selama periode panas ekstrem."
+        },
+        {
+          "dimensionId": 5,
+          "dimensionName": "Pengetahuan bencana",
+          "threshold": 75,
+          "text": "Seberapa paham kamu langkah penyelamatan saat suhu panas ekstrem?",
+          "description": "Misalnya membaca peringatan dini BMKG, mengenali tanda bahaya, dan tahu apa yang harus dilakukan.",
+          "options": [
+            {
+              "displayOrder": 1,
+              "text": "Sangat paham dan pernah berlatih",
+              "score": 3
+            },
+            {
+              "displayOrder": 2,
+              "text": "Paham dasar-dasarnya",
+              "score": 2
+            },
+            {
+              "displayOrder": 3,
+              "text": "Pernah mendengar, tetapi belum paham",
+              "score": 1
+            },
+            {
+              "displayOrder": 4,
+              "text": "Belum paham sama sekali",
+              "score": 0
+            }
+          ],
+          "recommendation": "Pelajari informasi peringatan suhu panas serta panduan kesiapsiagaan dari instansi terkait."
+        }
+      ]
+    }
+  ]
+}

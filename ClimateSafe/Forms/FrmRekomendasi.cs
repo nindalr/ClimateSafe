@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -56,23 +56,23 @@ namespace ClimateSafe
 
     public class FrmRekomendasi : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color coralInk = Color.FromArgb(159, 64, 51);
-        private readonly Color barHigh = Color.FromArgb(217, 80, 63);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color btnBlue = Color.FromArgb(55, 108, 178);
-        private readonly Color btnBlueHover = Color.FromArgb(44, 94, 164);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color iconBlue = Color.FromArgb(226, 236, 250);
-        private readonly Color bandBg = Color.FromArgb(250, 252, 255);
-        private readonly Color pillBlueBg = Color.FromArgb(228, 238, 247);
-        private readonly Color pillBlueInk = Color.FromArgb(47, 95, 148);
-        private readonly Color barTrack = Color.FromArgb(226, 234, 245);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color coralInk = Theme.CoralInk;
+        private readonly Color barHigh = Theme.BarHigh;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color btnBlue = Theme.BtnBlue;
+        private readonly Color btnBlueHover = Theme.BtnBlueHover;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color iconBlue = Theme.IconBlue;
+        private readonly Color bandBg = Theme.BandBg;
+        private readonly Color pillBlueBg = Theme.PillBlueBg;
+        private readonly Color pillBlueInk = Theme.PillBlueInk;
+        private readonly Color barTrack = Theme.BarTrack;
 
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
@@ -190,7 +190,14 @@ namespace ClimateSafe
             recPage.SuspendLayout();
             try
             {
-                if (Session.CurrentUser != null)
+                if (Session.IsGuest)
+                {
+                    session = GuestSessionView.GetChecklistSession();
+                    scores = GuestSessionView.GetDimensions();
+                    recommendations = GuestSessionView.GetRecommendations();
+                    hazardId = Session.GuestAssessment?.HazardId ?? 0;
+                }
+                else if (Session.CurrentUser != null)
                 {
                     session = checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
                     if (session != null)
@@ -490,21 +497,27 @@ namespace ClimateSafe
                 AddText(row, lines[i], 76, 38 + i * 22, 520, 24, 12f, false, ink);
             }
 
+            // Lebar kolom kanan dihitung dari teks (diukur seperti Label menggambar),
+            // bukan angka tetap, supaya "/100" tidak terpotong.
+            string scoreText = RoundScore(value);
+            int scoreW = LabelWidth(scoreText, 15f, FontStyle.Bold);
+            int unitW = LabelWidth("/100", 9f, FontStyle.Regular);
+            const int barW = 160;
+            const int scoreGap = 4;
+            int blockW = Math.Max(barW, scoreW + scoreGap + unitW);
+
             BufferedPanel block = new BufferedPanel();
-            block.Bounds = new Rectangle(Math.Max(0, row.Width - 24 - 200), 0, 200, 96);
+            block.Bounds = new Rectangle(Math.Max(0, row.Width - 24 - blockW), 0, blockW, 96);
             block.BackColor = Color.White;
             row.Controls.Add(block);
             PinRight(block, row, 24);
 
-            string scoreText = RoundScore(value);
-            int scoreW = Measure(scoreText, 15f, FontStyle.Bold);
-            int unitW = Measure("/100", 9f, FontStyle.Regular);
-            int startX = 200 - (scoreW + 4 + unitW);
-            AddText(block, scoreText, startX, 20, scoreW + 8, 28, 15f, true, ink);
-            AddText(block, "/100", startX + scoreW + 4, 29, unitW + 8, 18, 9f, false, muted);
+            int startX = blockW - (scoreW + scoreGap + unitW);
+            AddText(block, scoreText, startX, 20, scoreW, 28, 15f, true, ink);
+            AddText(block, "/100", startX + scoreW + scoreGap, 29, unitW, 18, 9f, false, muted);
 
             TargetBar bar = new TargetBar();
-            bar.Bounds = new Rectangle(200 - 160, 56, 160, 16);
+            bar.Bounds = new Rectangle(blockW - barW, 56, barW, 16);
             bar.Value = (float)(value / 100.0);
             bar.Target = (float)((score?.PassingThreshold ?? 0) / 100.0);
             bar.BarColor = isHigh ? barHigh : navy;
@@ -582,6 +595,15 @@ namespace ClimateSafe
         private int ButtonWidth(string text)
         {
             return Measure(text, 9.5f, FontStyle.Bold) + 48;
+        }
+
+        // Lebar teks seperti Label menggambar (padding bawaan TextRenderer).
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style))
+            {
+                return TextRenderer.MeasureText(text, f).Width;
+            }
         }
 
         private static int Measure(string text, float size, FontStyle style)
@@ -808,7 +830,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -838,6 +860,20 @@ namespace ClimateSafe
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
             MakeClickable(user, openProfil);
             user.Activated += openProfil;
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
         }
 
         private Label sidebarName;

@@ -202,31 +202,22 @@ namespace ClimateSafe
                     TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
             }
 
-            if (Focused)
-            {
-                // Cincin fokus digambar di dalam garis kartu agar tetap terlihat
-                // saat kartu terpilih (garis 2px).
-                using (GraphicsPath ring = UI.RoundPath(new Rectangle(4, 4, Width - 9, Height - 9), 12))
-                using (Pen p = new Pen(Navy, 2f))
-                {
-                    g.DrawPath(p, ring);
-                }
-            }
+            // Satu garis saja: garis kartu (2px navy saat terpilih, 1px saat tidak).
         }
     }
 
     internal sealed class FrmEdukasi : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color iconBlue = Color.FromArgb(226, 236, 250);
-        private readonly Color bandBg = Color.FromArgb(250, 252, 255);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color iconBlue = Theme.IconBlue;
+        private readonly Color bandBg = Theme.BandBg;
 
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
@@ -252,6 +243,8 @@ namespace ClimateSafe
         private ApiEducation? publishedContent;
         private List<ApiEducation> publishedContents = new();
         private string? educationError;
+        private bool offlineHazards;
+        private bool showingOfflineEducation;
 
         // Tujuan dari kartu Beranda; dipakai sekali saat data dimuat.
         public string? PendingHazard;
@@ -354,7 +347,14 @@ namespace ClimateSafe
 
             try
             {
-                IReadOnlyList<Hazard> loaded = recommendationRepository.GetHazards();
+                IReadOnlyList<Hazard> loaded;
+                offlineHazards = false;
+                try { loaded = recommendationRepository.GetHazards(); }
+                catch (Exception) when (Session.IsGuest)
+                {
+                    offlineHazards = true;
+                    loaded = ClimateSafe.Core.GuestCatalog.Load().Hazards.Select(h => new Hazard(h.Id, h.Name)).ToList();
+                }
                 hazards.Clear();
                 foreach (Hazard h in loaded) hazards.Add(h);
 
@@ -394,14 +394,26 @@ namespace ClimateSafe
             publishedContent = null;
             publishedContents.Clear();
             educationError = null;
+            showingOfflineEducation = false;
             Hazard? hazard = hazards.Find(h => h.Name == selectedHazard);
             if (hazard == null) return;
             try
             {
+                if (offlineHazards) { LoadOfflineEducation(hazard); return; }
                 publishedContents = ApiClient.Get<List<ApiEducation>>($"api/education/hazards/{hazard.HazardId}") ?? new();
                 publishedContent = publishedContents.Find(x => x.ContentId == selectedId) ?? publishedContents.FirstOrDefault();
             }
+            catch (Exception) when (Session.IsGuest) { LoadOfflineEducation(hazard); }
             catch (Exception ex) { educationError = "Materi tidak dapat dimuat. " + ex.Message; }
+        }
+
+        private void LoadOfflineEducation(Hazard hazard)
+        {
+            showingOfflineEducation = true;
+            string? body = OfflineEducationContent.GetSummary(hazard.Name);
+            if (string.IsNullOrWhiteSpace(body)) return;
+            publishedContent = new ApiEducation(0, hazard.HazardId, hazard.Name, body, null, null, DateTime.MinValue);
+            publishedContents.Add(publishedContent);
         }
 
         // Pemetaan ikon sama dengan FrmRekomendasi.HazardGlyph.
@@ -615,7 +627,8 @@ namespace ClimateSafe
             RoundPanel card = Card(holder, 0, 0, w, HeadH + 160 + 51, 16, Color.White, line);
             Stretch(card, holder, 0, 0);
 
-            AddText(card, "Ringkasan materi", 24, 24, 240, 18, 9f, true, muted);
+            AddText(card, showingOfflineEducation ? "Materi bawaan (offline; mungkin tidak terbaru)" : "Ringkasan materi",
+                24, 24, Math.Max(240, w - 48), 18, 9f, true, muted);
             AddText(card, hazardName, 24, 46, Math.Max(200, w - 48), 26, 15f, true, titleBlue);
 
             Panel headLine = new Panel();
@@ -802,6 +815,13 @@ namespace ClimateSafe
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // Lebar teks diukur seperti Label menggambar (padding bawaan TextRenderer), agar
+        // baris hasil bungkus benar-benar muat di lebar labelnya dan tidak terpotong.
+        private static int LabelWidth(string text, Font font)
+        {
+            return TextRenderer.MeasureText(text, font).Width;
+        }
+
         private static List<string> WrapLines(string text, Font font, int maxWidth)
         {
             List<string> lines = new List<string>();
@@ -811,8 +831,7 @@ namespace ClimateSafe
             foreach (string word in words)
             {
                 string test = cur.Length == 0 ? word : cur + " " + word;
-                int tw = TextRenderer.MeasureText(test, font,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                int tw = LabelWidth(test, font);
                 if (tw > maxWidth && cur.Length > 0)
                 {
                     lines.Add(cur);
@@ -901,7 +920,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -931,6 +950,20 @@ namespace ClimateSafe
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
             MakeClickable(user, openProfil);
             user.Activated += openProfil;
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
         }
 
         private Label sidebarName;
