@@ -6,7 +6,6 @@ using System.Windows.Forms;
 
 namespace ClimateSafe
 {
-    // Satu sistem tombol untuk seluruh layar admin.
     internal enum AdminButtonKind
     {
         Primary,
@@ -15,11 +14,8 @@ namespace ClimateSafe
         Quiet
     }
 
-    // Palet, ukuran, dan helper khusus layar admin. Hanya dipakai Forms/Admin/*;
-    // form sisi pengguna tidak memakai kelas ini dan tidak diubah.
     internal static class AdminUi
     {
-        // ---- palet (sama dengan sisi pengguna) ----
         public static readonly Color Coral = Color.FromArgb(235, 122, 104);
         public static readonly Color CoralSoft = Color.FromArgb(253, 232, 226);
         public static readonly Color Navy = Color.FromArgb(37, 88, 150);
@@ -35,17 +31,15 @@ namespace ClimateSafe
         public static readonly Color BandBg = Color.FromArgb(250, 252, 255);
         public static readonly Color HoverBg = Color.FromArgb(246, 249, 253);
 
-        // ---- warna tambahan khusus admin (di luar palet) ----
-        public static readonly Color SuccessBg = Color.FromArgb(220, 252, 231);   // #DCFCE7
-        public static readonly Color SuccessInk = Color.FromArgb(22, 101, 52);    // #166534
-        public static readonly Color DangerInk = Color.FromArgb(180, 35, 24);     // #B42318
-        public static readonly Color DangerBg = Color.FromArgb(254, 228, 226);    // #FEE4E2
-        public static readonly Color IdlePillBg = Color.FromArgb(241, 245, 249);  // #F1F5F9
-        public static readonly Color IdlePillInk = Color.FromArgb(100, 116, 139); // #64748B
-        public static readonly Color DisabledBg = Color.FromArgb(241, 245, 249);  // #F1F5F9
-        public static readonly Color DisabledInk = Color.FromArgb(148, 163, 184); // #94A3B8
+        public static readonly Color SuccessBg = Color.FromArgb(220, 252, 231);
+        public static readonly Color SuccessInk = Color.FromArgb(22, 101, 52);
+        public static readonly Color DangerInk = Color.FromArgb(180, 35, 24);
+        public static readonly Color DangerBg = Color.FromArgb(254, 228, 226);
+        public static readonly Color IdlePillBg = Color.FromArgb(241, 245, 249);
+        public static readonly Color IdlePillInk = Color.FromArgb(100, 116, 139);
+        public static readonly Color DisabledBg = Color.FromArgb(241, 245, 249);
+        public static readonly Color DisabledInk = Color.FromArgb(148, 163, 184);
 
-        // ---- ukuran ----
         public const int SidebarW = 256;
         public const int MenuW = 215;
         public const int MenuH = 44;
@@ -62,14 +56,12 @@ namespace ClimateSafe
         public const int ButtonH = 44;
         public const int Gap = 24;
 
-        // ---- kolom daftar pengguna (x dari tepi kartu) ----
         public const int ColId = 24;
         public const int ColName = 96;
         public const int ColEmail = 352;
         public const int ColRole = 684;
         public const int ColStatus = 800;
 
-        // ---- helper teks ----
         public static Label NewLabel(Control parent, string text, int x, int y, int w, int h,
                                      float size, FontStyle style, Color color,
                                      ContentAlignment align, string fontName)
@@ -109,7 +101,6 @@ namespace ClimateSafe
                 ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
-        // Lebar teks seperti cara Label menggambar (padding bawaan TextRenderer).
         public static int LabelWidth(string text, float size, FontStyle style)
         {
             using (Font f = UI.Body(size, style))
@@ -118,7 +109,6 @@ namespace ClimateSafe
             }
         }
 
-        // Lebar teks untuk kontrol yang menggambar sendiri dengan NoPadding (PillButton, pil).
         public static int DrawnWidth(string text, float size, FontStyle style)
         {
             using (Font f = UI.Body(size, style))
@@ -128,8 +118,6 @@ namespace ClimateSafe
             }
         }
 
-        // Jarak kiri yang ditambahkan TextRenderer saat Label menggambar teks. Dipakai
-        // untuk menyamakan tepi kiri teks dengan tepi kiri kontrol di dekatnya.
         public static int TextPad(float size, FontStyle style)
         {
             return (LabelWidth("Ag", size, style) - DrawnWidth("Ag", size, style)) / 2;
@@ -158,7 +146,6 @@ namespace ClimateSafe
             return lines;
         }
 
-        // ---- helper kontrol ----
         public static RoundPanel Card(Control parent, int x, int y, int w, int h, int radius,
                                       Color fill, Color border)
         {
@@ -189,7 +176,6 @@ namespace ClimateSafe
             return b;
         }
 
-        // Tombol dengan gaya baku sistem admin.
         public static PillButton MakeButton(Control parent, string text, int x, int y, int h,
                                             AdminButtonKind kind, float size, int padding,
                                             bool enabled = true)
@@ -200,7 +186,6 @@ namespace ClimateSafe
             return b;
         }
 
-        // Warna satu-satunya sumber untuk tiap jenis tombol admin.
         public static void StyleButton(PillButton button, AdminButtonKind kind, bool enabled)
         {
             switch (kind)
@@ -215,14 +200,12 @@ namespace ClimateSafe
                     SetEnabled(button, enabled, Color.White, DangerBg, DangerInk, DangerInk);
                     break;
                 default:
-                    // Quiet: tanpa isi sendiri, mengikuti latar induk.
                     SetEnabled(button, enabled, Color.Transparent, HoverBg, SubInk, Color.Empty);
                     break;
             }
             button.FocusColor = kind == AdminButtonKind.Primary ? Color.White : Navy;
         }
 
-        // Tombol utama/sekunder yang bisa dinonaktifkan tanpa menulis warna di halaman.
         public static void SetEnabled(PillButton button, bool enabled,
                                       Color fill, Color hover, Color fore, Color border)
         {
@@ -236,16 +219,48 @@ namespace ClimateSafe
             button.Invalidate();
         }
 
-        // Kotak isian: kontainer putih bergaris dengan TextBox tanpa border di dalamnya.
+        public static void StyleField(RoundPanel box, TextBox input)
+        {
+            box.Fill = Theme.FieldFill;
+            box.BorderColor = Theme.FieldBorder;
+            input.BackColor = Theme.FieldFill;
+
+            void Apply()
+            {
+                bool hot = box.ClientRectangle.Contains(box.PointToClient(Cursor.Position));
+                box.BorderColor = input.Focused ? Navy : hot ? Theme.FieldBorderHover : Theme.FieldBorder;
+                box.Invalidate();
+            }
+
+            input.GotFocus += delegate (object? s, EventArgs e) { Apply(); };
+            input.LostFocus += delegate (object? s, EventArgs e) { Apply(); };
+            input.MouseEnter += delegate (object? s, EventArgs e) { Apply(); };
+            input.MouseLeave += delegate (object? s, EventArgs e) { Apply(); };
+            box.MouseEnter += delegate (object? s, EventArgs e) { Apply(); };
+            box.MouseLeave += delegate (object? s, EventArgs e) { Apply(); };
+
+            box.Paint += delegate (object? s, PaintEventArgs e)
+            {
+                if (!input.Focused) return;
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                Rectangle r = new Rectangle(1, 1, box.Width - 3, box.Height - 3);
+                using (GraphicsPath path = UI.RoundPath(r, Math.Max(0, box.Radius - 1)))
+                using (Pen pen = new Pen(Navy, 1f))
+                {
+                    e.Graphics.DrawPath(pen, path);
+                }
+            };
+        }
+
         public static TextBox MakeField(Control parent, int x, int y, int w, string hint)
         {
-            RoundPanel box = Card(parent, x, y, w, FieldH, 8, Color.White, Line);
+            RoundPanel box = Card(parent, x, y, w, FieldH, 8, Theme.FieldFill, Theme.FieldBorder);
 
             TextBox input = new TextBox();
             input.BorderStyle = BorderStyle.None;
             input.Font = UI.Body(10f, FontStyle.Regular);
             input.ForeColor = Ink;
-            input.BackColor = Color.White;
+            input.BackColor = Theme.FieldFill;
             input.AutoSize = false;
             input.Tag = box;
             box.Controls.Add(input);
@@ -268,6 +283,7 @@ namespace ClimateSafe
                 placeholder.Visible = input.Text.Length == 0;
             };
 
+            StyleField(box, input);
             return input;
         }
 
@@ -315,13 +331,11 @@ namespace ClimateSafe
             }
         }
 
-        // Tampilkan pesan kegagalan yang disediakan client API.
         public static string TechnicalDetail(Exception ex)
         {
             return ex.Message;
         }
 
-        // Dialog konfirmasi kustom. Batal mendapat fokus awal, Enter = Batal, Esc = Batal.
         public static bool Confirm(IWin32Window owner, string title, string message,
                                    string actionText, bool danger)
         {

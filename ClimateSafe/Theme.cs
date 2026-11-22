@@ -50,6 +50,9 @@ namespace ClimateSafe
         public static readonly Color CtaBtnHover = Color.FromArgb(226, 108, 90);
         public static readonly Color CtaBtnPressed = Color.FromArgb(210, 92, 74);
         public static readonly Color CtaBtnText = Color.FromArgb(15, 23, 42);
+        public static readonly Color FieldBorder = Color.FromArgb(120, 136, 158);
+        public static readonly Color FieldBorderHover = Color.FromArgb(100, 116, 139);
+        public static readonly Color FieldFill = Color.FromArgb(248, 250, 252);
 
         public const int SidebarWidth = 256;
     }

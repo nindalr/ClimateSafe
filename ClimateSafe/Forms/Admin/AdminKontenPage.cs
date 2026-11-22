@@ -206,7 +206,7 @@ internal sealed class AdminKontenPage : BufferedPanel
     // Kotak isi materi: kontainer putih bergaris dengan TextBox tanpa border.
     private static TextBox MakeBodyBox(Control parent, int x, int y, int w, int h)
     {
-        var box = AdminUi.Card(parent, x, y, w, h, 8, Color.White, AdminUi.Line);
+        var box = AdminUi.Card(parent, x, y, w, h, 8, Theme.FieldFill, Theme.FieldBorder);
         var input = new TextBox
         {
             BorderStyle = BorderStyle.None,
@@ -215,16 +215,16 @@ internal sealed class AdminKontenPage : BufferedPanel
             ScrollBars = ScrollBars.Vertical,
             Font = UI.Body(10f, FontStyle.Regular),
             ForeColor = AdminUi.Ink,
-            BackColor = Color.White,
+            BackColor = Theme.FieldFill,
             Bounds = new Rectangle(14, 12, Math.Max(80, w - 28), h - 24),
             Tag = box
         };
         box.Controls.Add(input);
         box.Resize += (_, _) => input.SetBounds(14, 12, Math.Max(80, box.Width - 28), box.Height - 24);
         AdminUi.Stretch(box, parent, x, x);
+        AdminUi.StyleField(box, input);
         return input;
     }
-
     private void LayoutColumns()
     {
         int w = Math.Max(AdminUi.PageMinW, Width);
@@ -617,8 +617,11 @@ internal sealed class AdminKontenPage : BufferedPanel
         {
             var request = new
             {
-                hazardId = hazard.Id, title = title.Text, body = ToApi(body.Text),
-                sourceName = sourceName.Text, sourceUrl = sourceUrl.Text
+                hazardId = hazard.Id,
+                title = title.Text,
+                body = ToApi(body.Text),
+                sourceName = sourceName.Text,
+                sourceUrl = sourceUrl.Text
             };
             current = (current == null
                 ? ApiClient.Post<ApiAdminEducation>("api/admin/education", request)
