@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -74,18 +74,18 @@ namespace ClimateSafe
 
     public partial class FrmAssessment : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color coralBg = Color.FromArgb(254, 240, 236);
-        private readonly Color coralLine = Color.FromArgb(249, 214, 206);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color line2 = Color.FromArgb(222, 230, 240);
-        private readonly Color iconBlue = Color.FromArgb(226, 236, 250);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color coralBg = Theme.CoralBg;
+        private readonly Color coralLine = Theme.CoralLine;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color line2 = Theme.Line2;
+        private readonly Color iconBlue = Theme.IconBlue;
 
         private const int PageMaxW = 1120;
         private const int PageMinW = 960;
@@ -190,6 +190,26 @@ namespace ClimateSafe
             if (!asBuilt) return;
             if (index < 0 || index >= hazardNames.Length) return;
             SelectHazard(index);
+        }
+
+        // Keluar dari asesmen: konfirmasi bila sudah ada jawaban terpilih.
+        private void ConfirmLogout()
+        {
+            bool answered = false;
+            for (int i = 0; i < answers.Length; i++)
+            {
+                if (answers[i] >= 0) answered = true;
+            }
+
+            if (answered && MessageBox.Show(this,
+                    "Jawaban asesmen yang belum selesai akan hilang. Keluar sekarang?",
+                    "Asesmen", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                != DialogResult.Yes)
+            {
+                return;
+            }
+
+            Nav.Logout(this);
         }
 
         private void ResetAnswers()
@@ -503,7 +523,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -533,6 +553,20 @@ namespace ClimateSafe
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
             MakeClickable(user, openProfil);
             user.Activated += openProfil;
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { ConfirmLogout(); };
         }
 
         private Label sidebarName;

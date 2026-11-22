@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -387,6 +387,9 @@ namespace ClimateSafe
         public string Emoji = "";
         public string BadgeGlyph = "";
         public Color BadgeColor = Color.SteelBlue;
+        public float EmojiSize = 40f;
+        public int BadgeSize = 28;
+        public float BadgeFontSize = 10f;
 
         public CoverPicture()
         {
@@ -422,7 +425,7 @@ namespace ClimateSafe
                 }
                 if (!string.IsNullOrEmpty(Emoji))
                 {
-                    using (Font f = UI.MakeFont("Segoe UI Emoji", 40f, FontStyle.Regular))
+                    using (Font f = UI.MakeFont("Segoe UI Emoji", EmojiSize, FontStyle.Regular))
                     {
                         TextRenderer.DrawText(g, Emoji, f,
                             new Rectangle(0, 8, Width, Height - 16), Color.White,
@@ -433,14 +436,14 @@ namespace ClimateSafe
             }
 
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            Rectangle badge = new Rectangle(12, Height - 40, 28, 28);
+            Rectangle badge = new Rectangle(12, Height - BadgeSize - 12, BadgeSize, BadgeSize);
             using (SolidBrush wb = new SolidBrush(Color.White))
             {
                 g.FillEllipse(wb, badge);
             }
             if (!string.IsNullOrEmpty(BadgeGlyph))
             {
-                using (Font bf = UI.MakeFont("Segoe UI Symbol", 10f, FontStyle.Regular))
+                using (Font bf = UI.MakeFont("Segoe UI Symbol", BadgeFontSize, FontStyle.Regular))
                 {
                     TextRenderer.DrawText(g, BadgeGlyph, bf, badge, BadgeColor,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
@@ -778,6 +781,50 @@ namespace ClimateSafe
             if (from != null) from.Hide();
         }
 
+        // Keluar ke halaman login tanpa menutup aplikasi. Logika logout tetap milik
+        // FormLogin (handler FormClosed pada form utama: user.Logout() lalu login tampil).
+        public static void Logout(Form from)
+        {
+            Form main = dashboard;
+
+            quitting = true;
+            if (from != null && !from.IsDisposed && from != main) from.Hide();
+
+            Reset();            // buang semua form cache; flag quitting kembali false
+
+            quitting = true;    // lindungi penutupan form utama
+            try
+            {
+                if (main != null && !main.IsDisposed)
+                {
+                    main.Close();
+                }
+                else
+                {
+                    ShowLoginAgain();
+                }
+            }
+            finally
+            {
+                quitting = false;
+            }
+        }
+
+        // Dipakai bila form utama sudah tidak ada: pastikan login tetap tampil.
+        private static void ShowLoginAgain()
+        {
+            Session.CurrentUser = null;
+            foreach (Form form in Application.OpenForms)
+            {
+                if (form is ClimateSafe.Auth.FormLogin && !form.IsDisposed)
+                {
+                    form.Show();
+                    form.Activate();
+                    return;
+                }
+            }
+        }
+
         private static void Quit()
         {
             if (quitting) return;
@@ -788,35 +835,53 @@ namespace ClimateSafe
 
     public partial class FrmDashboard : Form
     {
-        private readonly Color coral = Color.FromArgb(235, 122, 104);
-        private readonly Color coralSoft = Color.FromArgb(253, 232, 226);
-        private readonly Color navy = Color.FromArgb(37, 88, 150);
-        private readonly Color blue = Color.FromArgb(66, 133, 205);
-        private readonly Color btnBlue = Color.FromArgb(55, 108, 178);
-        private readonly Color titleBlue = Color.FromArgb(34, 62, 108);
-        private readonly Color ink = Color.FromArgb(30, 41, 59);
-        private readonly Color muted = Color.FromArgb(100, 116, 139);
-        private readonly Color bg = Color.FromArgb(238, 242, 248);
-        private readonly Color line = Color.FromArgb(226, 232, 240);
-        private readonly Color iconBlue = Color.FromArgb(226, 236, 250);
-        private readonly Color taskDone = Color.FromArgb(246, 248, 251);
+        private readonly Color coral = Theme.Coral;
+        private readonly Color coralSoft = Theme.CoralSoft;
+        private readonly Color navy = Theme.Navy;
+        private readonly Color blue = Theme.Blue;
+        private readonly Color btnBlue = Theme.BtnBlue;
+        private readonly Color titleBlue = Theme.TitleBlue;
+        private readonly Color ink = Theme.Ink;
+        private readonly Color muted = Theme.Muted;
+        private readonly Color bg = Theme.Bg;
+        private readonly Color line = Theme.Line;
+        private readonly Color iconBlue = Theme.IconBlue;
+        // Gaya pil level, nilai sama dengan FrmHasilAsesmen.
+        private readonly Color coralInk = Theme.CoralInk;
+        private readonly Color pillBlueBg = Theme.PillBlueBg;
+        private readonly Color pillBlueInk = Theme.PillBlueInk;
 
         private const int PageMaxW = 1127;
         private const int PageMinW = 960;
-        private const int PageH = 1436;
-        private const int Gap = 22;
-        private const int C3 = 361;
-        private const int ChecklistW = 647;
+        private const int Gap = 24;                  // jarak antar kartu (kelipatan 8)
+        private const int C3 = 361;                  // kolom kartu bahaya (3 kolom)
+
+        // Satu pembagian kolom dipakai baris atas dan baris bawah.
+        private const int ColLeftNum = 647;
+        private const int ColLeftDen = 1105;
+
+        private const int HeaderH = 159;
+        private const int RowTopY = 181;
+        private const int RowTopH = 255;
+        private const int RowBottomY = RowTopY + RowTopH + Gap;
+        private const int RowBottomH = 443;
+        private const int HazardTitleY = RowBottomY + RowBottomH + Gap;
+        private const int HazardCardsY = HazardTitleY + 61;
+        private const int HazardCardH = 227;
+        private const int HazardPicH = 80;
+        private const int FooterY = HazardCardsY + HazardCardH + Gap;
+        private const int FooterH = 80;
+        private const int PageH = FooterY + FooterH;
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly RoundPanel[] hazardCards = new RoundPanel[3];
+        private readonly Label[,] hazardSummary = new Label[3, 2];
 
         private Panel dashScroll;
         private Panel dashPage;
         private RoundPanel dashHeader;
         private RoundPanel cardScore;
         private RoundPanel cardQuick;
-        private RoundPanel cardPromo;
         private RoundPanel cardChecklist;
         private RoundPanel cardPriority;
         private RoundPanel dashFooter;
@@ -850,6 +915,7 @@ namespace ClimateSafe
             base.OnVisibleChanged(e);
             if (Visible && dashBuilt)
             {
+                RequestHazardSummaries();
                 RefreshUserCard();
                 if (greetingLabel != null) greetingLabel.Text = "Halo, " + Session.FirstName;
                 RefreshSavedData();
@@ -966,7 +1032,6 @@ namespace ClimateSafe
             BuildHeader(dashPage);
             BuildScoreCard(dashPage);
             BuildQuickActions(dashPage);
-            BuildPromoCard(dashPage);
             BuildChecklist(dashPage);
             BuildPriorities(dashPage);
             BuildHazards(dashPage);
@@ -977,6 +1042,7 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
+            RequestHazardSummaries();
         }
 
         private void LayoutPage()
@@ -994,21 +1060,22 @@ namespace ClimateSafe
             int lastX = 2 * (c3 + Gap);
             int lastW = w - lastX;
 
-            dashHeader.SetBounds(0, 0, w, 159);
+            dashHeader.SetBounds(0, 0, w, HeaderH);
 
-            cardScore.SetBounds(0, 181, c3, 255);
-            cardQuick.SetBounds(c3 + Gap, 181, c3, 255);
-            cardPromo.SetBounds(lastX, 181, lastW, 255);
+            int cw = LeftColumnWidth(w);
+            int rw = w - cw - Gap;
 
-            int cw = (int)((w - Gap) * 647L / 1105L);
-            cardChecklist.SetBounds(0, 458, cw, 522);
-            cardPriority.SetBounds(cw + Gap, 458, w - cw - Gap, 443);
+            cardScore.SetBounds(0, RowTopY, cw, RowTopH);
+            cardQuick.SetBounds(cw + Gap, RowTopY, rw, RowTopH);
 
-            hazardCards[0].SetBounds(0, 1059, c3, 274);
-            hazardCards[1].SetBounds(c3 + Gap, 1059, c3, 274);
-            hazardCards[2].SetBounds(lastX, 1059, lastW, 274);
+            cardChecklist.SetBounds(0, RowBottomY, cw, RowBottomH);
+            cardPriority.SetBounds(cw + Gap, RowBottomY, rw, RowBottomH);
 
-            dashFooter.SetBounds(0, 1356, w, 80);
+            hazardCards[0].SetBounds(0, HazardCardsY, c3, HazardCardH);
+            hazardCards[1].SetBounds(c3 + Gap, HazardCardsY, c3, HazardCardH);
+            hazardCards[2].SetBounds(lastX, HazardCardsY, lastW, HazardCardH);
+
+            dashFooter.SetBounds(0, FooterY, w, FooterH);
         }
 
         private Label NewLabel(Control parent, string text, int x, int y, int w, int h,
@@ -1060,13 +1127,6 @@ namespace ClimateSafe
             return c;
         }
 
-        private Label AddEmoji(Control parent, string glyph, int x, int y, int w, int h,
-                               float size, Color color)
-        {
-            return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Emoji");
-        }
-
         private RoundPanel NewCard(Control parent, int x, int y, int w, int h, int radius,
                                    Color fill, Color gradient, float angle, Color border)
         {
@@ -1104,14 +1164,25 @@ namespace ClimateSafe
             return p;
         }
 
-        // Lebar teks tombol banner (8,5pt bold), dipakai agar lebar mengikuti teks.
-        private static int PromoButtonTextWidth(string text)
+        // Lebar kolom kiri; pembagian yang sama dipakai baris atas dan baris bawah.
+        private static int LeftColumnWidth(int pageWidth)
         {
-            using (Font f = UI.Body(8.5f, FontStyle.Bold))
+            return (int)((pageWidth - Gap) * (long)ColLeftNum / ColLeftDen);
+        }
+
+        // Lebar teks seperti Label menggambar (padding bawaan TextRenderer).
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style))
             {
-                return TextRenderer.MeasureText(text, f,
-                    new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                return TextRenderer.MeasureText(text, f).Width;
             }
+        }
+
+        // Pembulatan skor sama dengan FrmHasilAsesmen.
+        private static string ScoreText(double value)
+        {
+            return Math.Round(value, MidpointRounding.AwayFromZero).ToString("0");
         }
 
         private RoundButton MakeButton(Control parent, string text, int x, int y, int w, int h,
@@ -1238,7 +1309,7 @@ namespace ClimateSafe
 
             BufferedPanel bottom = new BufferedPanel();
             bottom.Dock = DockStyle.Bottom;
-            bottom.Height = 89;
+            bottom.Height = 150;
             bottom.BackColor = Color.FromArgb(247, 249, 252);
             sidebar.Controls.Add(bottom);
 
@@ -1268,6 +1339,20 @@ namespace ClimateSafe
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
             MakeClickable(user, openProfil);
             user.Activated += openProfil;
+
+            // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
+            PillButton exit = new PillButton();
+            exit.Text = "Keluar";
+            exit.Radius = 10;
+            exit.Fill = Color.White;
+            exit.HoverFill = Theme.ChipHover;
+            exit.TextColor = navy;
+            exit.BorderColor = line;
+            exit.FocusColor = navy;
+            exit.Font = UI.Body(10f, FontStyle.Bold);
+            exit.Bounds = new Rectangle(16, 85, 223, 40);
+            bottom.Controls.Add(exit);
+            exit.Click += delegate (object sender, EventArgs e) { Nav.Logout(this); };
         }
 
         private Label greetingLabel;
@@ -1319,10 +1404,12 @@ namespace ClimateSafe
 
             Color pillBorder = Color.FromArgb(226, 232, 240);
 
-            RoundPanel dateCard = Card(dashHeader, PageMaxW - 30 - 147 - 12 - 190, 64, 190, 32, 16,
+            int dateW = 34 + LabelWidth(tanggal, 8.5f, FontStyle.Regular) + 12;
+            RoundPanel dateCard = Card(dashHeader, PageMaxW - 30 - 147 - 12 - dateW, 64, dateW, 32, 16,
                 Color.White, pillBorder);
             AddSymbol(dateCard, "\u25A3", 10, 0, 20, 32, 10f, muted);
-            AddAligned(dateCard, tanggal, 34, 0, 152, 32, 8.5f, false, ink, ContentAlignment.MiddleLeft);
+            AddAligned(dateCard, tanggal, 34, 0, dateW - 46, 32, 8.5f, false, ink,
+                ContentAlignment.MiddleLeft);
 
             RoundPanel weatherCard = Card(dashHeader, PageMaxW - 30 - 147, 64, 147, 32, 16,
                 Color.White, pillBorder);
@@ -1417,48 +1504,60 @@ namespace ClimateSafe
 
         private void BuildScoreCard(Panel pageHost)
         {
-            RoundPanel card = NewCard(pageHost, 0, 181, C3, 255, 16,
+            RoundPanel card = NewCard(pageHost, 0, RowTopY, LeftColumnWidth(PageMaxW), RowTopH, 16,
                 Color.White, Color.FromArgb(253, 236, 231), 45f, line);
             cardScore = card;
 
             AddText(card, "Skor Kesiapan Terakhir", 20, 22, 280, 30, 10.5f, true, ink);
+            AddText(card, latestSession?.HazardName ?? "", 20, 52, 280, 18, 8.5f, false, muted);
 
-            RoundPanel circle = Card(card, 25, 71, 54, 54, 27, coral, Color.Empty);
-            AddSymbol(circle, "\u2714", 0, 0, 54, 54, 20f, Color.White);
-
-            string scoreText = latestSession?.OverallScore.ToString("0.##") ?? "—";
-            Label scoreBig = AddAligned(card, scoreText, 98, 54, 120, 56, 30f, true, ink, ContentAlignment.MiddleLeft);
+            string scoreText = latestSession == null ? "\u2014" : ScoreText(latestSession.OverallScore);
+            Label scoreBig = AddAligned(card, scoreText, 20, 82, 120, 56, 30f, true, ink,
+                ContentAlignment.MiddleLeft);
             scoreBig.AutoSize = true;
             int scoreW = scoreBig.PreferredWidth;
-            AddAligned(card, "/100", 98 + scoreW + 22, 74, 70, 38, 12f, false, muted, ContentAlignment.MiddleLeft);
+            AddAligned(card, "/100", 20 + scoreW + 14, 102, 70, 38, 12f, false, muted,
+                ContentAlignment.MiddleLeft);
 
-            RoundPanel pill = Card(card, 100, 136, 145, 28, 12, coralSoft, Color.FromArgb(248, 205, 195));
-            AddAligned(pill, latestSession?.Level ?? "Belum ada asesmen", 0, 0, 145, 24, 8.5f, true, coral,
-                ContentAlignment.MiddleCenter);
+            // Gaya pil level sama dengan FrmHasilAsesmen.
+            string levelText = latestSession?.Level ?? "Belum ada asesmen";
+            bool notReady = string.Equals(levelText, ScoringRules.NotReadyLevel,
+                StringComparison.OrdinalIgnoreCase);
+            int pillW = LabelWidth(levelText, 8.5f, FontStyle.Bold) + 28;
+            RoundPanel pill = Card(card, 20, 152, pillW, 28, 14,
+                notReady ? coralSoft : pillBlueBg, Color.Empty);
+            AddAligned(pill, levelText, 0, 0, pillW, 28, 8.5f, true,
+                notReady ? coralInk : pillBlueInk, ContentAlignment.MiddleCenter);
 
             Stretch(Divider(card, 20, 206, C3 - 40), card, 20, 20);
             AddText(card, "Terakhir diperbarui:", 20, 218, 150, 18, 8.5f, false, muted);
-            Label date = AddAligned(card, latestSession?.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") ?? "—", C3 - 20 - 141, 218, 141, 18, 8.5f, false, ink,
-                ContentAlignment.TopRight);
+            Label date = AddAligned(card,
+                latestSession?.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") ?? "\u2014",
+                C3 - 20 - 141, 218, 141, 18, 8.5f, false, ink, ContentAlignment.TopRight);
             PinRight(date, card, 20);
         }
 
         private void BuildQuickActions(Panel pageHost)
         {
-            RoundPanel card = Card(pageHost, C3 + Gap, 181, C3, 255, 16, Color.White, line);
+            int cw = LeftColumnWidth(PageMaxW);
+            int rw = PageMaxW - cw - Gap;
+            RoundPanel card = Card(pageHost, cw + Gap, RowTopY, rw, RowTopH, 16, Color.White, line);
             cardQuick = card;
 
             IconBox(card, "\u26A1", 21, 22, 28, iconBlue, navy);
             AddAligned(card, "Aksi Cepat", 57, 22, 200, 22, 10.5f, true, ink, ContentAlignment.MiddleLeft);
 
-            AddActionItem(card, 62, "\u270E", "Mulai Asesmen", "Cek kesiapan dan risiko bencana",
-                delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); });
+            // Satu aksi utama di layar: gaya tombol utama (coral penuh, teks putih).
+            RoundButton start = MakeButton(card, "Mulai Asesmen", 21, 66, rw - 42, 45,
+                coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 10, 10f);
+            Stretch(start, card, 21, 21);
+            start.Click += delegate (object sender, EventArgs e) { Nav.ShowAssessment(this); };
 
-            AddActionItem(card, 136, "\u2606", "Lihat Rekomendasi", "Dapatkan saran sesuai hasilmu",
+            AddActionItem(card, 127, "\u2606", "Lihat Rekomendasi", "Dapatkan saran sesuai hasilmu",
                 delegate (object sender, EventArgs e) { Nav.ShowRekomendasi(this); });
 
             Stretch(Divider(card, 21, 210, C3 - 42), card, 21, 21);
-            AddText(card, "Estimasi asesmen: ~3 menit", 21, 219, 250, 18, 8.5f, false, muted);
+            AddText(card, "5 pertanyaan untuk tiap bahaya", 21, 219, 250, 18, 8.5f, false, muted);
         }
 
         private void AddActionItem(RoundPanel parent, int y, string glyph, string title,
@@ -1477,90 +1576,18 @@ namespace ClimateSafe
             MakeClickable(box, action);
         }
 
-        private void BuildPromoCard(Panel pageHost)
-        {
-            RoundPanel card = NewCard(pageHost, 2 * (C3 + Gap), 181, C3, 255, 16,
-                Color.FromArgb(255, 244, 240), Color.FromArgb(252, 228, 220), 45f,
-                Color.FromArgb(248, 215, 205));
-            card.Decorate = DrawPromoArt;
-            cardPromo = card;
-
-            AddText(card, "Siap Hadapi Perubahan Iklim?", 21, 20, 165, 50, 12f, true, ink);
-            AddText(card, "Langkah kecil hari ini membuat kita lebih siap menghadapi esok hari.",
-                21, 78, 150, 62, 9f, false, muted);
-
-            // Lebar diukur dari teks dengan padding yang sama seperti tombol sebelumnya
-            // ("Mulai Asesmen  \u2192" pada lebar 145), posisi dan gaya tidak berubah.
-            string promoText = "Buka Edukasi  \u2192";
-            int promoPad = 145 - PromoButtonTextWidth("Mulai Asesmen  \u2192");
-            int promoW = PromoButtonTextWidth(promoText) + promoPad;
-
-            RoundButton start = MakeButton(card, promoText, 21, 200, promoW, 35,
-                coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 8, 8.5f);
-            start.Click += delegate (object sender, EventArgs e)
-            {
-                Nav.ShowEdukasi(this);
-            };
-
-            RoundPanel avatar = Card(card, C3 - 20 - 96, 32, 96, 96, 48,
-                Color.FromArgb(255, 250, 247), Color.FromArgb(250, 222, 212));
-            AddEmoji(avatar, "\U0001F477", 0, 0, 96, 96, 32f, ink);
-            PinRight(avatar, card, 20);
-        }
-
-        private void DrawPromoArt(Graphics g, Rectangle r)
-        {
-            int w = r.Width;
-            int h = r.Height;
-
-            PointF[] wave =
-            {
-                new PointF(0, h - 78),
-                new PointF(w * 0.25f, h - 92),
-                new PointF(w * 0.50f, h - 72),
-                new PointF(w * 0.75f, h - 60),
-                new PointF(w, h - 82)
-            };
-
-            using (GraphicsPath gp = new GraphicsPath())
-            {
-                gp.AddCurve(wave);
-                gp.AddLine(w, h - 82, w, h);
-                gp.AddLine(w, h, 0, h);
-                gp.CloseFigure();
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 140, 170, 215)))
-                {
-                    g.FillPath(b, gp);
-                }
-            }
-
-            using (Pen p = new Pen(Color.FromArgb(170, 120, 165, 215), 1.5f))
-            {
-                g.DrawCurve(p, wave);
-            }
-
-            PointF[] wave2 = new PointF[wave.Length];
-            for (int i = 0; i < wave.Length; i++)
-            {
-                wave2[i] = new PointF(wave[i].X, wave[i].Y + 9f);
-            }
-            using (Pen p = new Pen(Color.FromArgb(140, 120, 165, 215), 1.2f))
-            {
-                p.DashStyle = DashStyle.Dash;
-                g.DrawCurve(p, wave2);
-            }
-        }
-
         private void BuildChecklist(Panel pageHost)
         {
-            RoundPanel card = Card(pageHost, 0, 458, ChecklistW, 522, 16, Color.White, line);
+            int cw = LeftColumnWidth(PageMaxW);
+            RoundPanel card = Card(pageHost, 0, RowBottomY, cw, RowBottomH, 16, Color.White, line);
             cardChecklist = card;
 
             IconBox(card, "\u2611", 20, 23, 28, iconBlue, navy);
             AddText(card, "Progress Checklist Persiapan", 62, 23, 360, 30, 10.5f, true, ink);
-            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 8.5f, false, muted);
+            AddText(card, "Lacak pemenuhan logistik & keselamatan keluarga", 62, 55, 440, 24, 8.5f,
+                false, muted);
 
-            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", ChecklistW - 22 - 125, 28, 125, 20, 8.5f,
+            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", cw - 22 - 125, 28, 125, 20, 8.5f,
                 false, coral, ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
@@ -1570,7 +1597,7 @@ namespace ClimateSafe
             PinRight(seeAll, card, 22);
 
             CircleProgress cp = new CircleProgress();
-            cp.Bounds = new Rectangle(55, 109, 100, 100);
+            cp.Bounds = new Rectangle(55, 168, 100, 100);
             cp.Percent = latestSession == null ? 0 : (int)Math.Round(latestSession.Progress);
             cp.MainText = (latestSession?.CompletedCount ?? 0) + "/" + (latestSession?.Items.Count ?? 0);
             cp.SubText = "SELESAI";
@@ -1580,117 +1607,32 @@ namespace ClimateSafe
             cp.MutedColor = muted;
             card.Controls.Add(cp);
 
-            AddAligned(card, (latestSession?.Progress ?? 0).ToString("0.#") + "% tindakan selesai", 20, 222, 185, 30, 8.5f, false, muted,
-                ContentAlignment.TopCenter);
-
-            Label hazardTitle = AddText(card, latestSession?.HazardName ?? "Belum ada asesmen", 213, 108, 380, 28, 12, true, ink);
+            Label hazardTitle = AddText(card, latestSession?.HazardName ?? "Belum ada asesmen",
+                213, 176, 380, 28, 12, true, ink);
             Stretch(hazardTitle, card, 213, 20);
-            Label checklistHint = AddText(card, latestSession == null ? "Mulai asesmen untuk membuat checklist persiapan."
-                : latestSession.Items.Count == 0 ? "Tidak ada tindakan yang dihasilkan untuk sesi ini."
-                : "Buka checklist untuk menandai tindakan yang sudah dikerjakan.",
-                213, 148, 370, 65, 9, false, muted);
+
+            Label checklistHint = AddText(card, latestSession == null
+                ? "Mulai asesmen untuk membuat checklist persiapan."
+                : latestSession.Items.Count == 0
+                    ? "Tidak ada tindakan yang dihasilkan untuk sesi ini."
+                    : "Buka checklist untuk menandai tindakan yang sudah dikerjakan.",
+                213, 210, 370, 65, 9, false, muted);
             Stretch(checklistHint, card, 213, 20);
-
-            Stretch(Divider(card, 20, 269, ChecklistW - 40), card, 20, 20);
-            AddText(card, "TUGAS SIAGA TERKINI", 20, 286, 300, 16, 7.5f, true, muted);
-
-            var recentItems = latestSession?.Items.Take(3).ToList();
-            if (recentItems != null)
-                for (int i = 0; i < recentItems.Count; i++)
-                {
-                    ChecklistItem item = recentItems[i];
-                    Label action = AddText(card, (item.IsCompleted ? "✓ " : "☐ ") + item.Description,
-                        24, 318 + i * 62, ChecklistW - 48, 56, 9, false, item.IsCompleted ? muted : ink);
-                    Stretch(action, card, 24, 24);
-                }
-        }
-
-        private void AddBarRow(RoundPanel parent, int y, string label, string value,
-                               float progress, Color color)
-        {
-            AddText(parent, label, 213, y, 200, 18, 8.5f, false, ink);
-            Label val = AddAligned(parent, value, parent.Width - 20 - 200, y, 200, 18, 8.5f, false, muted,
-                ContentAlignment.TopRight);
-            PinRight(val, parent, 20);
-
-            ThinBar bar = new ThinBar();
-            bar.Bounds = new Rectangle(213, y + 24, parent.Width - 213 - 20, 6);
-            bar.Value = progress;
-            bar.BarColor = color;
-            bar.TrackColor = Color.FromArgb(226, 234, 245);
-            parent.Controls.Add(bar);
-            Stretch(bar, parent, 213, 20);
-        }
-
-        private void AddTask(RoundPanel parent, int y, string text, string info, int kind, bool done)
-        {
-            int rw = parent.Width - 40;
-            RoundPanel row = NewCard(parent, 20, y, rw, 38, 8,
-                done ? taskDone : Color.White, Color.Empty, 0f,
-                done ? line : Color.Empty);
-            Stretch(row, parent, 20, 20);
-
-            TickBox cb = new TickBox();
-            cb.Location = new Point(13, 11);
-            cb.OnColor = coral;
-            cb.OffBorder = Color.FromArgb(203, 213, 225);
-            cb.Checked = done;
-            row.Controls.Add(cb);
-
-            Label tx = AddAligned(row, text, 41, 8, 380, 22, 8.5f, false, ink, ContentAlignment.MiddleLeft);
-            tx.Cursor = Cursors.Hand;
-
-            Control right;
-            if (kind == 1)
-            {
-                RoundPanel pill = Card(row, rw - 12 - 86, 8, 86, 22, 11, coralSoft,
-                    Color.FromArgb(248, 205, 195));
-                AddAligned(pill, info, 0, 0, 86, 22, 7.5f, true, coral, ContentAlignment.MiddleCenter);
-                right = pill;
-            }
-            else if (kind == 2)
-            {
-                RoundPanel pill = Card(row, rw - 12 - 52, 8, 52, 22, 11,
-                    Color.FromArgb(240, 243, 247), Color.Empty);
-                AddAligned(pill, info, 0, 0, 52, 22, 7.5f, false, muted, ContentAlignment.MiddleCenter);
-                right = pill;
-            }
-            else
-            {
-                right = AddAligned(row, info, rw - 12 - 120, 10, 120, 18, 8f, false, muted,
-                    ContentAlignment.TopRight);
-            }
-            PinRight(right, row, 12);
-
-            Font normal = UI.Body(8.5f, FontStyle.Regular);
-            Font strike = UI.Body(8.5f, FontStyle.Strikeout);
-
-            Action apply = delegate ()
-            {
-                tx.Font = cb.Checked ? strike : normal;
-                tx.ForeColor = cb.Checked ? muted : ink;
-                row.Fill = cb.Checked ? taskDone : Color.White;
-                row.BorderColor = cb.Checked ? line : Color.Empty;
-                row.Invalidate();
-            };
-            apply();
-            cb.CheckedChanged += delegate (object sender, EventArgs e) { apply(); };
-
-            EventHandler toggle = delegate (object sender, EventArgs e) { cb.Checked = !cb.Checked; };
-            tx.Click += toggle;
-            row.Click += toggle;
         }
 
         private void BuildPriorities(Panel pageHost)
         {
-            int pw = PageMaxW - ChecklistW - Gap;
-            RoundPanel card = Card(pageHost, ChecklistW + Gap, 458, pw, 443, 16, Color.White, line);
+            int cw = LeftColumnWidth(PageMaxW);
+            int pw = PageMaxW - cw - Gap;
+            RoundPanel card = Card(pageHost, cw + Gap, RowBottomY, pw, RowBottomH, 16, Color.White, line);
             cardPriority = card;
 
             IconBox(card, "\u26A0", 20, 31, 28, coralSoft, coral);
             AddText(card, "Prioritas Utama", 64, 23, 300, 30, 10.5f, true, ink);
-            AddText(card, "Dari hasil asesmen terakhir, yang perlu Anda perhatikan:",
-                64, 55, 300, 32, 8.5f, false, muted);
+
+            string prioritySubtitle = "Dari hasil asesmen terakhir, yang perlu kamu perhatikan.";
+            AddText(card, prioritySubtitle, 64, 55,
+                LabelWidth(prioritySubtitle, 8.5f, FontStyle.Regular), 18, 8.5f, false, muted);
 
             Stretch(Divider(card, 20, 88, pw - 40), card, 20, 20);
 
@@ -1700,13 +1642,12 @@ namespace ClimateSafe
                     : "Tidak ada tindakan yang belum selesai pada sesi ini.", 24, 110, pw - 48, 70, 10, false, muted);
             else
                 for (int i = 0; i < pendingItems.Count; i++)
-                    AddPriority(card, 103 + i * 94, (i + 1).ToString(), "Tindakan persiapan", pendingItems[i].Description);
+                    AddPriority(card, 103 + i * 94, (i + 1).ToString(), pendingItems[i].Description);
 
             Stretch(Divider(card, 20, 398, pw - 40), card, 20, 20);
-            AddText(card, "Dari checklist asesmen terakhir", 20, 408, 240, 18, 8f, false, muted);
 
-            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", pw - 20 - 125, 408, 125, 18, 8.5f, false, coral,
-                ContentAlignment.TopRight);
+            Label seeAll = AddAligned(card, "Lihat Semua  \u203A", pw - 20 - 125, 408, 125, 18, 8.5f,
+                false, coral, ContentAlignment.TopRight);
             seeAll.Cursor = Cursors.Hand;
             seeAll.Click += delegate (object sender, EventArgs e)
             {
@@ -1715,7 +1656,7 @@ namespace ClimateSafe
             PinRight(seeAll, card, 20);
         }
 
-        private void AddPriority(RoundPanel parent, int y, string number, string title, string description)
+        private void AddPriority(RoundPanel parent, int y, string number, string description)
         {
             RoundPanel box = NewCard(parent, 20, y, parent.Width - 40, 84, 10,
                 Color.FromArgb(254, 240, 236), Color.Empty, 0f, Color.FromArgb(249, 214, 206));
@@ -1724,19 +1665,21 @@ namespace ClimateSafe
             RoundPanel badge = Card(box, 16, 20, 24, 24, 12, coral, Color.Empty);
             AddAligned(badge, number, 0, 0, 24, 24, 8.5f, true, Color.White, ContentAlignment.MiddleCenter);
 
-            AddText(box, title, 57, 13, 330, 18, 9f, true, ink);
-            AddText(box, description, 57, 34, 270, 40, 8f, false, muted);
+            // Nama dimensi tidak ada pada data checklist yang dimuat Beranda, jadi teks
+            // tindakan menjadi isi utama item.
+            Label text = AddText(box, description, 57, 18, 270, 52, 9f, false, ink);
+            Stretch(text, box, 57, 16);
         }
 
         private void BuildHazards(Panel pageHost)
         {
-            IconBox(pageHost, "\u25A4", 0, 999, 28, iconBlue, navy);
-            AddText(pageHost, "Informasi Bahaya Iklim", 41, 998, 400, 24, 12f, true, titleBlue);
+            IconBox(pageHost, "\u25A4", 0, HazardTitleY + 1, 28, iconBlue, navy);
+            AddText(pageHost, "Informasi Bahaya Iklim", 41, HazardTitleY, 400, 24, 12f, true, titleBlue);
             AddText(pageHost, "Kenali jenis bahaya iklim dan langkah mitigasi terbaik.",
-                41, 1023, 450, 18, 8.5f, false, muted);
+                41, HazardTitleY + 25, 450, 18, 8.5f, false, muted);
 
             // Nama bahaya dari satu sumber (FrmAssessment.hazardNames), deskripsi dari
-            // EducationContent, tujuan klik = halaman Edukasi untuk bahaya itu.
+            // materi Edukasi lewat API (EducationSummary), tujuan klik = halaman Edukasi.
             AddHazard(pageHost, 0, 0, FrmAssessment.hazardNames[0], "\U0001F30A", "\u2248",
                 Color.FromArgb(112, 132, 146), Color.FromArgb(60, 78, 92), "banjir");
 
@@ -1751,12 +1694,15 @@ namespace ClimateSafe
                                string emoji, string badgeGlyph, Color top, Color bottom,
                                string assetName)
         {
-            RoundPanel card = Card(pageHost, x, 1059, C3, 274, 16, Color.White, line);
+            RoundPanel card = Card(pageHost, x, HazardCardsY, C3, HazardCardH, 16, Color.White, line);
             card.ClipRegion = true;
             hazardCards[index] = card;
 
             CoverPicture pic = new CoverPicture();
-            pic.Bounds = new Rectangle(1, 1, C3 - 2, 127);
+            pic.Bounds = new Rectangle(1, 1, C3 - 2, HazardPicH);
+            pic.EmojiSize = 26f;
+            pic.BadgeSize = 22;
+            pic.BadgeFontSize = 8.5f;
             pic.ColorTop = top;
             pic.ColorBottom = bottom;
             pic.Emoji = emoji;
@@ -1766,19 +1712,18 @@ namespace ClimateSafe
             card.Controls.Add(pic);
             Stretch(pic, card, 1, 1);
 
-            AddText(card, hazardName, 16, 143, 300, 22, 10.5f, true, ink);
+            AddText(card, hazardName, 16, 96, 300, 22, 10.5f, true, ink);
 
-            List<string> summaryLines = HazardSummaryLines(hazardName, 285);
-            for (int i = 0; i < summaryLines.Count; i++)
+            for (int i = 0; i < 2; i++)
             {
-                AddText(card, summaryLines[i], 16, 171 + i * 20, 285, 20, 9f, false, muted);
+                hazardSummary[index, i] = AddText(card, "", 16, 124 + i * 20, 285, 20, 9f, false, muted);
             }
 
-            Stretch(Divider(card, 16, 229, C3 - 32), card, 16, 16);
+            Stretch(Divider(card, 16, 182, C3 - 32), card, 16, 16);
 
-            AddAligned(card, "Baca selengkapnya", 16, 241, 250, 20, 8.5f, true, navy,
+            AddAligned(card, "Baca selengkapnya", 16, 194, 250, 20, 8.5f, true, navy,
                 ContentAlignment.MiddleLeft);
-            Chevron chev = AddChevron(card, C3 - 16 - 16, 243, navy);
+            Chevron chev = AddChevron(card, C3 - 16 - 16, 196, navy);
             chev.BringToFront();
             PinRight(chev, card, 16);
 
@@ -1813,41 +1758,55 @@ namespace ClimateSafe
             }
         }
 
-        // Deskripsi kartu bahaya: kalimat pertama dari paragraf pertama materi Edukasi,
-        // maksimal 2 baris dan dipotong di batas kata.
-        private static List<string> HazardSummaryLines(string hazardName, int maxWidth)
+        // Memuat ringkasan materi dari API lalu memperbarui label di thread UI.
+        private void RequestHazardSummaries()
         {
-            string sentence = FirstSentence(EducationContent.GetSummary(hazardName));
-            if (sentence.Length == 0)
+            RefreshHazardSummaries();
+            EducationSummary.LoadAsync(delegate ()
             {
-                return new List<string> { "Belum ada materi" };
+                if (IsDisposed || !IsHandleCreated) return;
+                try
+                {
+                    BeginInvoke((Action)RefreshHazardSummaries);
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            });
+        }
+
+        private void RefreshHazardSummaries()
+        {
+            if (IsDisposed) return;
+
+            for (int index = 0; index < 3; index++)
+            {
+                string text;
+                EducationState state = EducationSummary.GetState(FrmAssessment.hazardNames[index],
+                    out text);
+                List<string> lines = SummaryLines(EducationSummary.StateText(state, text), 285);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    Label label = hazardSummary[index, i];
+                    if (label == null || label.IsDisposed) continue;
+                    label.Text = i < lines.Count ? lines[i] : "";
+                }
             }
+        }
+
+        // Deskripsi kartu bahaya: teks ringkasan dibungkus maksimal 2 baris dan
+        // dipotong di batas kata.
+        private static List<string> SummaryLines(string sentence, int maxWidth)
+        {
+            if (sentence.Length == 0) return new List<string>();
 
             using (Font f = UI.Body(9f, FontStyle.Regular))
             {
                 List<string> lines = WrapText(sentence, f, maxWidth);
                 if (lines.Count <= 2) return lines;
 
-                List<string> result = new List<string> { lines[0], Ellipsize(lines[1], f, maxWidth) };
-                return result;
+                return new List<string> { lines[0], Ellipsize(lines[1], f, maxWidth) };
             }
-        }
-
-        private static string FirstSentence(string? summary)
-        {
-            if (string.IsNullOrWhiteSpace(summary)) return "";
-
-            string[] rawLines = summary.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-            foreach (string raw in rawLines)
-            {
-                string paragraph = raw.Trim();
-                if (paragraph.Length == 0) continue;
-                if (paragraph.StartsWith("- ", StringComparison.Ordinal)) continue;
-
-                int stop = paragraph.IndexOf(". ", StringComparison.Ordinal);
-                return stop >= 0 ? paragraph.Substring(0, stop + 1) : paragraph;
-            }
-            return "";
         }
 
         private static string Ellipsize(string text, Font font, int maxWidth)
@@ -1890,7 +1849,7 @@ namespace ClimateSafe
 
         private void BuildFooter(Panel pageHost)
         {
-            dashFooter = Card(pageHost, 0, 1356, PageMaxW, 80, 14, Color.White, line);
+            dashFooter = Card(pageHost, 0, FooterY, PageMaxW, FooterH, 14, Color.White, line);
 
             NewLabel(dashFooter, "\u201C", 21, 16, 30, 40, 22f, FontStyle.Bold, coral,
                 ContentAlignment.TopLeft, "Georgia");
