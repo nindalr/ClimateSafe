@@ -378,21 +378,20 @@ namespace ClimateSafe
             vline.BackColor = line;
             card.Controls.Add(vline);
 
-            // Lebar kotak diukur seperti Label menggambar (LabelWidth, bukan Measure yang
-            // tanpa padding) dan kedua label dibiarkan AutoSize, supaya angka 1-3 digit dan
-            // "/100" tidak pernah dibungkus ke baris kedua lalu terpotong.
             string scoreText = RoundScore(session.OverallScore);
-            int scoreW = LabelWidth(scoreText, 24f, FontStyle.Bold);
             int unitW = LabelWidth("/100", 9f, FontStyle.Regular);
             int scoreX = divX + 24;
-            Label scoreLabel = AddText(card, scoreText, scoreX, 20, scoreW, 44, 24f, true, ink);
+
+            Label scoreLabel = AddText(card, scoreText, scoreX, 20, 10, 44, 24f, true, ink);
             scoreLabel.AutoSize = true;
-            Label unitLabel = AddText(card, "/100", scoreX + scoreW + 8, 44, unitW, 20, 9f, false, muted);
+
+            Label unitLabel = AddText(card, "/100", scoreLabel.Right - 6, 44, unitW, 20, 9f, false, muted);
             unitLabel.AutoSize = true;
+            unitLabel.BringToFront();
 
             string level = session.Level ?? "";
             int levelW = LabelWidth(level, 8.5f, FontStyle.Bold) + 28;
-            RoundPanel badge = Card(card, scoreX + scoreW + 8 + unitW + 16, 32, levelW, 24, 12,
+            RoundPanel badge = Card(card, unitLabel.Right + 16, 32, levelW, 24, 12,
                 iconBlue, Color.Empty);
             AddAligned(badge, level, 0, 0, levelW, 24, 8.5f, true, navy, ContentAlignment.MiddleCenter);
 
@@ -525,7 +524,7 @@ namespace ClimateSafe
             bar.Bounds = new Rectangle(blockW - barW, 56, barW, 16);
             bar.Value = (float)(value / 100.0);
             bar.Target = (float)((score?.PassingThreshold ?? 0) / 100.0);
-            bar.BarColor = isHigh ? barHigh : navy;
+            bar.BarColor = isHigh ? barHigh : Theme.Blue;
             bar.TrackColor = barTrack;
             bar.TargetColor = ink;
             block.Controls.Add(bar);

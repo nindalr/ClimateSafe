@@ -546,25 +546,27 @@ namespace ClimateSafe
             PinRight(pill, card, 24);
 
             string scoreText = session == null ? "0"
-                : Math.Round(session.OverallScore, MidpointRounding.AwayFromZero).ToString("0");
-            // LabelWidth (hasil ukur dengan padding) + AutoSize: kotak tidak pernah lebih
-            // sempit dari teks, jadi angka dan "/100" tidak terpotong.
-            int scoreW = LabelWidth(scoreText, 22f, FontStyle.Bold);
-            int unitW = LabelWidth("/100", 10f, FontStyle.Regular);
-            int groupW = scoreW + 8 + unitW;
+    : Math.Round(session.OverallScore, MidpointRounding.AwayFromZero).ToString("0");
+            int overlap = 6;
             int groupRight = w - 24 - pillW - 16;
+
+            Label score = AddText(card, scoreText, 0, 40, 10, 40, 22f, true, ink);
+            score.AutoSize = true;
+
+            Label unit = AddText(card, "/100", 0, 58, 10, 20, 10f, false, muted);
+            unit.AutoSize = true;
+
+            int groupW = score.Width + unit.Width - overlap;
+            score.Left = groupRight - groupW;
+            unit.Left = score.Right - overlap;
+            unit.BringToFront();
 
             int capW = LabelWidth("Skor asesmen", 9f, FontStyle.Regular) + 8;
             Label caption = AddAligned(card, "Skor asesmen", groupRight - capW, 24, capW, 18, 9f, false,
                 muted, ContentAlignment.MiddleRight);
             PinRight(caption, card, 24 + pillW + 16);
 
-            Label score = AddText(card, scoreText, groupRight - groupW, 40, scoreW, 40, 22f, true, ink);
-            score.AutoSize = true;
-            PinRight(score, card, 24 + pillW + 16 + 8 + unitW);
-
-            Label unit = AddText(card, "/100", groupRight - unitW, 58, unitW, 20, 10f, false, muted);
-            unit.AutoSize = true;
+            PinRight(score, card, 24 + pillW + 16 + unit.Width - overlap);
             PinRight(unit, card, 24 + pillW + 16);
         }
 
