@@ -96,7 +96,7 @@ namespace ClimateSafe
 
         internal static readonly string[] hazardNames = { "Banjir", "Cuaca Ekstrem", "Suhu Panas Ekstrem" };
         internal static readonly string[] hazardLower = { "banjir", "cuaca ekstrem", "suhu panas ekstrem" };
-        internal static readonly string[] hazardGlyph = { "\u2248", "\u2602", "\u2600" };
+        internal static readonly string[] hazardGlyph = { Ico.Rain, Ico.Storm, Ico.Sun };
         internal static readonly string[] hazardDesc =
         {
             "Genangan, luapan sungai, dan drainase buruk.",
@@ -114,7 +114,8 @@ namespace ClimateSafe
             "PERLENGKAPAN DARURAT", "JALUR EVAKUASI", "KONTAK DARURAT",
             "RENCANA LOGISTIK", "PENGETAHUAN BENCANA"
         };
-        internal static readonly string[] dimGlyph = { "\u2692", "\u27A4", "\u260E", "\u2630", "\u2139" };
+        internal static readonly string[] dimGlyph =
+            { Ico.Tools, Ico.Route, Ico.Phone, Ico.List, Ico.Info };
 
         private readonly string[] questionText = new string[5];
         private readonly string[] questionDesc = new string[5];
@@ -352,7 +353,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -480,7 +481,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "\u2302", "\u270E", "\u2606", "\u2611", "\u21BA", "\u25A4" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -546,8 +547,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -556,7 +576,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;
@@ -606,8 +626,8 @@ namespace ClimateSafe
                 0, 66, 800, 20, 9.5f, false, muted);
 
             RoundPanel pill = Card(host, PageMaxW - 158, 29, 158, 30, 15, Color.White, line);
-            AddSymbol(pill, "\u25F7", 10, 0, 20, 30, 10f, navy);
-            AddAligned(pill, "Estimasi 3\u20135 menit", 32, 0, 122, 30, 8.5f, false, ink,
+            AddSymbol(pill, Ico.Clock, 10, 0, 20, 30, 10f, navy);
+            AddAligned(pill, "Estimasi 3-5 menit", 32, 0, 122, 30, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             PinRight(pill, host, 0);
         }
@@ -617,7 +637,7 @@ namespace ClimateSafe
             stepCard = Card(host, 0, 105, PageMaxW, 60, 14, Color.White, line);
 
             RoundPanel c1 = Card(stepCard, 32, 16, 28, 28, 14, iconBlue, Color.FromArgb(200, 216, 240));
-            AddSymbol(c1, "\u2714", 0, 0, 28, 28, 8f, navy);
+            AddSymbol(c1, Ico.Check, 0, 0, 28, 28, 9.75f, navy);
             AddAligned(stepCard, "1. Pilih Bahaya", 70, 19, 130, 22, 9f, false, ink,
                 ContentAlignment.MiddleLeft);
 
@@ -855,8 +875,8 @@ namespace ClimateSafe
                 : "Pilih satu jawaban untuk melanjutkan";
 
             btnNext.Text = (q == 4 ? "Lihat Hasil  \u2192" : "Lanjutkan  \u2192");
-            btnNext.Fill = hasAnswer ? coral : Color.FromArgb(242, 180, 168);
-            btnNext.HoverFill = hasAnswer ? Color.FromArgb(224, 106, 88) : Color.FromArgb(242, 180, 168);
+            btnNext.Fill = hasAnswer ? Theme.CtaBtnFill : Color.FromArgb(242, 180, 168);
+            btnNext.HoverFill = hasAnswer ? Theme.CtaBtnHover : Color.FromArgb(242, 180, 168);
             btnNext.Invalidate();
 
             btnBack.TextColor = ink;
@@ -883,7 +903,8 @@ namespace ClimateSafe
             };
 
             btnNext = MakeButton(navBar, "Lanjutkan  \u2192", DesignLeftW - 24 - 132, 14, 132, 45,
-                coral, Color.FromArgb(224, 106, 88), Color.White, Color.Empty, 8, 10f);
+                Theme.CtaBtnFill, Theme.CtaBtnHover, Theme.CtaBtnText, Color.Empty, 8, 10f);
+            btnNext.PressedFill = Theme.CtaBtnPressed;
             btnNext.Click += delegate (object sender, EventArgs e) { GoNext(); };
             PinRight(btnNext, navBar, 24);
 
@@ -1016,7 +1037,7 @@ namespace ClimateSafe
             noteCard = Card(host, DesignLeftW + ColGap, 807, RightW, 127, 14, coralBg, coralLine);
 
             RoundPanel ib = Card(noteCard, 21, 22, 32, 32, 8, coralSoft, Color.Empty);
-            AddSymbol(ib, "\u2714", 0, 0, 32, 32, 10f, coral);
+            AddSymbol(ib, Ico.Check, 0, 0, 32, 32, 10f, coral);
 
             AddText(noteCard, "Isi sesuai kondisi sebenarnya", 67, 20, 270, 20, 9.5f, true, coral);
 

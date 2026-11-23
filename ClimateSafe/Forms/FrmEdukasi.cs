@@ -186,7 +186,7 @@ namespace ClimateSafe
                 g.FillEllipse(b, circle);
             }
 
-            using (Font f = UI.MakeFont("Segoe UI Symbol", 13f, FontStyle.Regular))
+            using (Font f = UI.MakeFont(UI.IconFontName, 13f, FontStyle.Regular))
             {
                 TextRenderer.DrawText(g, Glyph, f, circle, Selected ? Color.White : Navy,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
@@ -227,7 +227,6 @@ namespace ClimateSafe
         private const int BodyMaxW = 720;
         private const int BodyLineH = 21;    // 10pt dengan tinggi baris 1,6
         private const int BlockGap = 12;
-        private const int HeadH = 96;        // 24 + 18 + 4 + 26 + 24
 
         private readonly List<RoundPanel> menuItems = new List<RoundPanel>();
         private readonly RecommendationRepository recommendationRepository = new RecommendationRepository();
@@ -419,9 +418,9 @@ namespace ClimateSafe
         // Pemetaan ikon sama dengan FrmRekomendasi.HazardGlyph.
         private static string HazardGlyph(string hazardName)
         {
-            if (string.Equals(hazardName, "Cuaca Ekstrem", StringComparison.OrdinalIgnoreCase)) return "☂";
-            if (string.Equals(hazardName, "Suhu Panas Ekstrem", StringComparison.OrdinalIgnoreCase)) return "☀";
-            return "≈";
+            if (string.Equals(hazardName, "Cuaca Ekstrem", StringComparison.OrdinalIgnoreCase)) return Ico.Storm;
+            if (string.Equals(hazardName, "Suhu Panas Ekstrem", StringComparison.OrdinalIgnoreCase)) return Ico.Sun;
+            return Ico.Rain;
         }
 
         // ---------- render ----------
@@ -555,14 +554,17 @@ namespace ClimateSafe
             else
             {
                 int summaryTop = 0;
-                if (publishedContents.Count > 0)
+                // Pemilih materi hanya berguna bila ada lebih dari satu materi terpublikasi.
+                if (publishedContents.Count > 1)
                 {
                     AddText(holder, "Pilih materi", 0, 0, 250, 22, 10f, true, titleBlue);
-                    var articlePicker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList,
-                        Bounds = new Rectangle(0, 26, Math.Min(600, w), 30), Font = UI.Body(10f, FontStyle.Regular),
-                        DisplayMember = nameof(ApiEducation.Title), DataSource = publishedContents };
-                    articlePicker.SelectedItem = publishedContent;
-                    articlePicker.SelectedIndexChanged += (_, _) =>
+                    var articlePicker = new AdminDropdown
+{
+    Bounds = new Rectangle(0, 26, Math.Min(600, w), AdminDropdown.FieldHeight),
+    Format = o => ((ApiEducation)o).Title
+};
+articlePicker.SetItems(publishedContents.Cast<object>());
+articlePicker.SelectedIndex = publishedContents.IndexOf(publishedContent!);
                     {
                         if (articlePicker.SelectedItem is ApiEducation selected && selected.ContentId != publishedContent?.ContentId)
                         {
@@ -624,15 +626,26 @@ namespace ClimateSafe
         {
             int w = holder.Width;
 
-            RoundPanel card = Card(holder, 0, 0, w, HeadH + 160 + 51, 16, Color.White, line);
+            int titleH;
+            using (Font tf = UI.MakeFont(UI.FontName, 15f, FontStyle.Bold))
+            {
+                titleH = Math.Max(32, TextRenderer.MeasureText(hazardName, tf,
+                    new Size(int.MaxValue, int.MaxValue),
+                    TextFormatFlags.NoPadding | TextFormatFlags.SingleLine).Height + 8);
+            }
+            int headH = (24 + 18 + 4 + titleH + 24 + 7) / 8 * 8;
+            int pad = (headH - (18 + 4 + titleH)) / 2;
+
+            RoundPanel card = Card(holder, 0, 0, w, headH + 160 + 51, 16, Color.White, line);
             Stretch(card, holder, 0, 0);
 
             AddText(card, showingOfflineEducation ? "Materi bawaan (offline; mungkin tidak terbaru)" : "Ringkasan materi",
-                24, 24, Math.Max(240, w - 48), 18, 9f, true, muted);
-            AddText(card, hazardName, 24, 46, Math.Max(200, w - 48), 26, 15f, true, titleBlue);
+                24, pad, Math.Max(240, w - 48), 18, 9f, true, muted);
+            Label title = AddText(card, hazardName, 24, pad + 22, Math.Max(200, w - 48), titleH, 15f, true, titleBlue);
+            title.AutoEllipsis = true;
 
             Panel headLine = new Panel();
-            headLine.Bounds = new Rectangle(0, HeadH, w, 1);
+            headLine.Bounds = new Rectangle(0, headH, w, 1);
             headLine.BackColor = line;
             card.Controls.Add(headLine);
             Stretch(headLine, card, 0, 0);
@@ -642,19 +655,19 @@ namespace ClimateSafe
             {
                 bodyH = 160;
                 Label empty = AddAligned(card, educationError ?? "Ringkasan materi untuk kategori ini belum tersedia.",
-                    24, HeadH + 1, Math.Max(200, w - 48), bodyH, 10f, false, muted,
+                    24, headH + 1, Math.Max(200, w - 48), bodyH, 10f, false, muted,
                     ContentAlignment.MiddleCenter);
                 Stretch(empty, card, 24, 24);
             }
             else
             {
-                bodyH = BuildSummaryBody(card, summary, HeadH + 1 + 24) + 48;
+                bodyH = BuildSummaryBody(card, summary, headH + 1 + 24) + 48;
                 string? source = publishedContent?.SourceName;
                 string? sourceUrl = publishedContent?.SourceUrl;
                 if (!string.IsNullOrWhiteSpace(source) || !string.IsNullOrWhiteSpace(sourceUrl))
                 {
                     string sourceText = "Sumber: " + string.Join(" - ", new[] { source, sourceUrl }.Where(s => !string.IsNullOrWhiteSpace(s)));
-                    bodyH += BuildSummaryBody(card, sourceText, HeadH + 1 + bodyH - 24) + 12;
+                    bodyH += BuildSummaryBody(card, sourceText, headH + 1 + bodyH - 24) + 12;
                 }
             }
 
@@ -662,7 +675,7 @@ namespace ClimateSafe
             footer.Fill = bandBg;
             footer.LineColor = line;
             footer.Radius = 15;
-            footer.Bounds = new Rectangle(1, HeadH + 1 + bodyH, w - 2, 51);
+            footer.Bounds = new Rectangle(1, headH + 1 + bodyH, w - 2, 51);
             card.Controls.Add(footer);
             Stretch(footer, card, 1, 1);
 
@@ -670,7 +683,7 @@ namespace ClimateSafe
                 "Informasi ini bersifat umum dan tidak menggantikan informasi resmi dari BNPB, BPBD, dan BMKG.",
                 23, 16, Math.Max(200, w - 48), 18, 9f, false, muted, ContentAlignment.TopLeft);
 
-            int total = HeadH + 1 + bodyH + 51;
+            int total = headH + 1 + bodyH + 51;
             card.Height = total;
             return total;
         }
@@ -758,7 +771,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -877,7 +890,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -943,8 +956,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -953,7 +985,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,7 +12,6 @@ namespace ClimateSafe
         public double Progress => Items.Count == 0 ? 0 : CompletedCount * 100.0 / Items.Count;
 
         public override string ToString() =>
-            CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm") + " — " + HazardName +
-            " (#" + AssessmentId + ")";
+            HazardName + ", " + CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm");
     }
 }

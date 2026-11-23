@@ -726,7 +726,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -807,7 +807,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -881,14 +881,33 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, badgeBg, Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, badgeBg, Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;

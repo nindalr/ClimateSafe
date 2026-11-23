@@ -146,7 +146,14 @@ namespace ClimateSafe
         private BufferedPanel pbScroll;
         private BufferedPanel pbPage;
         private RoundPanel hazardCard;
+        private const int ActionBarH = 112;
+        private const int PageContentH = 670;
+
         private Label hintLabel;
+        private Label hintName;
+        private BufferedPanel pbActionHost;
+        private RoundPanel pbActionCard;
+        private PillButton pbNext;
         private Font descFont;
 
         private Label sidebarName;
@@ -223,19 +230,35 @@ namespace ClimateSafe
             sidebar.Margin = Padding.Empty;
             root.Controls.Add(sidebar, 0, 0);
 
+            BufferedPanel content = new BufferedPanel();
+            content.Dock = DockStyle.Fill;
+            content.BackColor = bg;
+            content.Margin = Padding.Empty;
+            root.Controls.Add(content, 1, 0);
+
             BufferedPanel sc = new BufferedPanel();
             sc.Dock = DockStyle.Fill;
             sc.AutoScroll = true;
             sc.AutoScrollMargin = new Size(0, 32);
             sc.BackColor = bg;
             sc.Margin = Padding.Empty;
-            root.Controls.Add(sc, 1, 0);
+            content.Controls.Add(sc);
             pbScroll = sc;
+
+            // Bar aksi menempel di dasar area konten, di luar panel yang di-scroll,
+            // supaya tombol Lanjutkan selalu terlihat (termasuk pada 1366x768).
+            BufferedPanel bar = new BufferedPanel();
+            bar.Dock = DockStyle.Bottom;
+            bar.Height = ActionBarH;
+            bar.BackColor = bg;
+            bar.Margin = Padding.Empty;
+            content.Controls.Add(bar);
+            pbActionHost = bar;
 
             BuildSidebar(sidebar);
 
             BufferedPanel pg = new BufferedPanel();
-            pg.Size = new Size(PageMaxW, 798);
+            pg.Size = new Size(PageMaxW, PageContentH);
             pg.Location = new Point(32, 32);
             pg.BackColor = bg;
             sc.Controls.Add(pg);
@@ -246,7 +269,7 @@ namespace ClimateSafe
             BuildHazardPicker(pbPage);
             BuildDimensions(pbPage);
             BuildNote(pbPage);
-            BuildActionBar(pbPage);
+            BuildActionBar(pbActionHost);
 
             pbBuilt = true;
             SelectHazard(0);
@@ -268,6 +291,12 @@ namespace ClimateSafe
 
             pbPage.Left = x + pbScroll.AutoScrollPosition.X;
             pbPage.Width = w;
+
+            if (pbActionCard != null)
+            {
+                pbActionCard.SetBounds(x, pbActionCard.Top, w, pbActionCard.Height);
+                LayoutHint();
+            }
         }
 
         // ---------- isi ----------
@@ -391,43 +420,53 @@ namespace ClimateSafe
             card.Controls.Add(body);
             Stretch(body, card, 24, 24);
 
-            int colW = Math.Max(120, (body.Width - ColGap * (total - 1)) / total);
-            for (int i = 0; i < total; i++)
+            // Lebar tiap item = kotak ikon 32 + jarak 12 + lebar teks (TextRenderer, NoPadding).
+            // Sisa ruang dibagi rata sebagai jarak antar item, sehingga item pertama mulai di
+            // tepi kiri area isi (sejajar judul) dan item terakhir berhenti tepat di tepi kanan.
+            RoundPanel[] boxes = new RoundPanel[total];
+            Label[] labels = new Label[total];
+            int[] itemW = new int[total];
+
+            using (Font f = UI.Body(9f, FontStyle.Regular))
             {
-                BufferedPanel col = new BufferedPanel();
-                col.Bounds = new Rectangle(i * (colW + ColGap), 0, colW, 40);
-                col.BackColor = Color.White;
-                body.Controls.Add(col);
-
-                RoundPanel ib = Card(col, 0, 4, 32, 32, 8, iconBlue, Color.Empty);
-                AddSymbol(ib, FrmAssessment.dimGlyph[i], 0, 0, 32, 32, 10.5f, navy);
-
-                int textW = Math.Max(60, colW - 44);
-                List<string> lines;
-                using (Font f = UI.Body(9f, FontStyle.Regular))
+                for (int i = 0; i < total; i++)
                 {
-                    lines = WrapLines(FrmAssessment.dimNames[i], f, textW);
+                    int textW = TextRenderer.MeasureText(FrmAssessment.dimNames[i], f,
+                        new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding).Width;
+                    itemW[i] = 44 + textW;
+
+                    boxes[i] = Card(body, 0, 4, 32, 32, 8, iconBlue, Color.Empty);
+                    AddSymbol(boxes[i], FrmAssessment.dimGlyph[i], 0, 0, 32, 32, 10.5f, navy);
+
+                    // Lebar label diberi 8 px lebih: ruang gambar Label di luar hasil ukur
+                    // NoPadding, tidak dihitung sebagai bagian item.
+                    labels[i] = AddAligned(body, FrmAssessment.dimNames[i], 0, 0, textW + 8, 40,
+                        9f, false, ink, ContentAlignment.MiddleLeft);
                 }
-                if (lines.Count > 2)
-                {
-                    lines = new List<string> { lines[0], lines[1] };
-                }
-
-                int blockH = Math.Max(1, lines.Count) * 18;
-                int top = (40 - blockH) / 2;
-                for (int k = 0; k < lines.Count; k++)
-                {
-                    AddAligned(col, lines[k], 44, top + k * 18, textW, 18, 9f, false, ink,
-                        ContentAlignment.MiddleLeft);
-                }
-
-                int index = i;
-                body.Resize += delegate (object sender, EventArgs e)
-                {
-                    int cw = Math.Max(120, (body.Width - ColGap * (total - 1)) / total);
-                    col.SetBounds(index * (cw + ColGap), 0, cw, 40);
-                };
             }
+
+            EventHandler spread = delegate (object sender, EventArgs e)
+            {
+                int sum = 0;
+                for (int i = 0; i < total; i++) sum += itemW[i];
+
+                int slots = Math.Max(1, total - 1);
+                // Jarak tidak pernah kurang dari ColGap: lebih baik strip melebar daripada
+                // teks dipotong.
+                int free = Math.Max(ColGap * slots, body.Width - sum);
+                int gap = free / slots;
+                int extra = free - gap * slots;   // sisa pembagian, agar item terakhir pas di tepi
+
+                int x = 0;
+                for (int i = 0; i < total; i++)
+                {
+                    boxes[i].Left = x;
+                    labels[i].Left = x + 44;
+                    x += itemW[i] + gap + (i < extra ? 1 : 0);
+                }
+            };
+            body.Resize += spread;
+            spread(body, EventArgs.Empty);
         }
 
         private void BuildNote(Panel host)
@@ -436,7 +475,7 @@ namespace ClimateSafe
             Stretch(card, host, 0, 0);
 
             RoundPanel ib = Card(card, 24, 16, 32, 32, 8, coralSoft, Color.Empty);
-            AddSymbol(ib, "✔", 0, 0, 32, 32, 10f, coral);
+            AddSymbol(ib, Ico.Check, 0, 0, 32, 32, 10f, coral);
 
             AddText(card, "Isi sesuai kondisi sebenarnya", 72, 14, 320, 20, 9.5f, true, coral);
             Label desc = AddAligned(card,
@@ -447,36 +486,51 @@ namespace ClimateSafe
 
         private void BuildActionBar(Panel host)
         {
-            RoundPanel card = Card(host, 0, 694, PageMaxW, 72, 14, Color.White, line);
-            Stretch(card, host, 0, 0);
+            RoundPanel card = Card(host, 0, 16, PageMaxW, 72, 14, Color.White, line);
+            pbActionCard = card;
 
-            hintLabel = AddAligned(card, "", 24, 0, PageMaxW - 48 - 200, 72, 9f, false, muted,
+            // Teks pendamping: nama bahaya (tebal) lalu keterangan.
+            hintName = AddAligned(card, "", 24, 0, 160, 72, 9.75f, true, ink,
+                ContentAlignment.MiddleLeft);
+            hintLabel = AddAligned(card, "", 184, 0, 240, 72, 9.75f, false, muted,
                 ContentAlignment.MiddleLeft);
 
             // Lebar tombol: teks diukur seperti kontrol menggambar + padding 24 kiri dan kanan.
             int buttonW = Math.Max(160,
-                LabelWidth("Lanjutkan  →", 10f, FontStyle.Bold) + 48);
+                LabelWidth("Lanjutkan  \u2192", 10f, FontStyle.Bold) + 48);
             PillButton next = new PillButton();
-            next.Text = "Lanjutkan  →";
+            next.Text = "Lanjutkan  \u2192";
             next.Radius = 10;
-            next.Fill = coral;
-            next.HoverFill = coralHover;
-            next.TextColor = Color.White;
-            next.FocusColor = Color.White;
+            next.Fill = Theme.CtaBtnFill;
+            next.HoverFill = Theme.CtaBtnHover;
+            next.PressedFill = Theme.CtaBtnPressed;
+            next.TextColor = Theme.CtaBtnText;
+            next.FocusColor = Theme.CtaBtnText;
             next.Font = UI.Body(10f, FontStyle.Bold);
             next.Bounds = new Rectangle(PageMaxW - 24 - buttonW, 13, buttonW, 45);
             card.Controls.Add(next);
             next.BringToFront();
             PinRight(next, card, 24);
+            pbNext = next;
 
-            // Label status dibatasi lebarnya (dan ikut menyusut saat jendela menyempit)
-            // supaya tidak pernah menutupi tombol yang berjangkar di kanan.
-            hintLabel.Width = Math.Max(120, card.Width - 24 - 24 - buttonW - 24);
-            Stretch(hintLabel, card, 24, 24 + buttonW + 24);
             next.Click += delegate (object sender, EventArgs e)
             {
                 Nav.ShowAssessmentQuestions(this, hazardIdx);
             };
+
+            LayoutHint();
+        }
+
+        // Dua label teks pendamping dibatasi lebarnya supaya tidak pernah
+        // menutupi tombol yang berjangkar di kanan.
+        private void LayoutHint()
+        {
+            if (pbActionCard == null || pbNext == null || hintName == null || hintLabel == null) return;
+
+            int avail = Math.Max(80, pbActionCard.Width - 24 - 24 - pbNext.Width - 24);
+            int nameW = Math.Min(avail, LabelWidth(hintName.Text, 9.75f, FontStyle.Bold) + 6);
+            hintName.SetBounds(24, 0, nameW, pbActionCard.Height);
+            hintLabel.SetBounds(24 + nameW, 0, Math.Max(40, avail - nameW), pbActionCard.Height);
         }
 
         // ---------- pilihan ----------
@@ -516,7 +570,10 @@ namespace ClimateSafe
                 hzRadios[k].Selected = sel;
             }
 
-            hintLabel.Text = FrmAssessment.hazardNames[index] + " dipilih · Siap melanjutkan";
+            hintName.Text = FrmAssessment.hazardNames[index];
+            hintLabel.Text = "dipilih. Lanjutkan untuk menjawab " +
+                FrmAssessment.dimNames.Length + " pertanyaan.";
+            LayoutHint();
 
             if (hadFocus) hzOptions[index].Focus();
         }
@@ -638,7 +695,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -740,7 +797,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -807,8 +864,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -817,7 +893,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;
@@ -858,8 +934,8 @@ namespace ClimateSafe
                 0, 66, 800, 20, 9.5f, false, muted);
 
             RoundPanel pill = Card(host, PageMaxW - 158, 29, 158, 30, 15, Color.White, line);
-            AddSymbol(pill, "◷", 10, 0, 20, 30, 10f, navy);
-            AddAligned(pill, "Estimasi 3–5 menit", 32, 0, 122, 30, 8.5f, false, ink,
+            AddSymbol(pill, Ico.Clock, 10, 0, 20, 30, 10f, navy);
+            AddAligned(pill, "Estimasi 3-5 menit", 32, 0, 122, 30, 8.5f, false, ink,
                 ContentAlignment.MiddleLeft);
             PinRight(pill, host, 0);
         }

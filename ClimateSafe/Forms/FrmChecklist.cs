@@ -538,7 +538,7 @@ namespace ClimateSafe
 
             string level = session == null ? "" : (session.Level ?? "");
             bool notReady = string.Equals(level, NotReadyLevel, StringComparison.OrdinalIgnoreCase);
-            int pillW = Measure(level, 9f, FontStyle.Bold) + 28;
+            int pillW = LabelWidth(level, 9f, FontStyle.Bold) + 28;
             RoundPanel pill = Card(card, w - 24 - pillW, 42, pillW, 28, 14,
                 notReady ? coralSoft : pillBlueBg, Color.Empty);
             AddAligned(pill, level, 0, 0, pillW, 28, 9f, true,
@@ -547,21 +547,25 @@ namespace ClimateSafe
 
             string scoreText = session == null ? "0"
                 : Math.Round(session.OverallScore, MidpointRounding.AwayFromZero).ToString("0");
-            int scoreW = Measure(scoreText, 22f, FontStyle.Bold);
-            int unitW = Measure("/100", 10f, FontStyle.Regular);
-            int groupW = scoreW + 4 + unitW;
+            // LabelWidth (hasil ukur dengan padding) + AutoSize: kotak tidak pernah lebih
+            // sempit dari teks, jadi angka dan "/100" tidak terpotong.
+            int scoreW = LabelWidth(scoreText, 22f, FontStyle.Bold);
+            int unitW = LabelWidth("/100", 10f, FontStyle.Regular);
+            int groupW = scoreW + 8 + unitW;
             int groupRight = w - 24 - pillW - 16;
 
-            int capW = Measure("Skor asesmen", 9f, FontStyle.Regular) + 8;
+            int capW = LabelWidth("Skor asesmen", 9f, FontStyle.Regular) + 8;
             Label caption = AddAligned(card, "Skor asesmen", groupRight - capW, 24, capW, 18, 9f, false,
                 muted, ContentAlignment.MiddleRight);
             PinRight(caption, card, 24 + pillW + 16);
 
-            Label score = AddText(card, scoreText, groupRight - groupW, 40, scoreW + 8, 34, 22f, true, ink);
-            PinRight(score, card, 24 + pillW + 16 + unitW - 4);
+            Label score = AddText(card, scoreText, groupRight - groupW, 40, scoreW, 40, 22f, true, ink);
+            score.AutoSize = true;
+            PinRight(score, card, 24 + pillW + 16 + 8 + unitW);
 
-            Label unit = AddText(card, "/100", groupRight - unitW, 58, unitW + 8, 20, 10f, false, muted);
-            PinRight(unit, card, 24 + pillW + 16 - 8);
+            Label unit = AddText(card, "/100", groupRight - unitW, 58, unitW, 20, 10f, false, muted);
+            unit.AutoSize = true;
+            PinRight(unit, card, 24 + pillW + 16);
         }
 
         private int BuildItems(BufferedPanel host, ChecklistSession? session, int y, int w)
@@ -587,7 +591,7 @@ namespace ClimateSafe
             {
                 int circleX = (w - 48) / 2;
                 RoundPanel circle = Card(card, circleX, cy + 96, 48, 48, 24, iconBlue, Color.Empty);
-                AddSymbol(circle, "☑", 0, 0, 48, 48, 13f, navy);
+                AddSymbol(circle, Ico.Check, 0, 0, 48, 48, 13f, navy);
                 CenterIn(circle, card);
 
                 Label note = AddAligned(card, "Tidak ada tindakan yang dihasilkan untuk sesi ini.",
@@ -667,7 +671,7 @@ namespace ClimateSafe
             Stretch(card, host, 0, 0);
 
             RoundPanel circle = Card(card, (w - 56) / 2, 130, 56, 56, 28, iconBlue, Color.Empty);
-            AddSymbol(circle, "☑", 0, 0, 56, 56, 15f, navy);
+            AddSymbol(circle, Ico.Check, 0, 0, 56, 56, 15f, navy);
             CenterIn(circle, card);
 
             string message = "Belum ada asesmen. Selesaikan asesmen untuk membuat checklist.";
@@ -693,6 +697,15 @@ namespace ClimateSafe
         }
 
         // ---------- helper tampilan ----------
+
+        // Lebar teks seperti Label menggambarnya (dengan padding bawaan TextRenderer).
+        private static int LabelWidth(string text, float size, FontStyle style)
+        {
+            using (Font f = UI.Body(size, style))
+            {
+                return TextRenderer.MeasureText(text, f).Width;
+            }
+        }
 
         private static int Measure(string text, float size, FontStyle style)
         {
@@ -750,7 +763,7 @@ namespace ClimateSafe
                                 float size, Color color)
         {
             return NewLabel(parent, glyph, x, y, w, h, size, FontStyle.Regular,
-                color, ContentAlignment.MiddleCenter, "Segoe UI Symbol");
+                color, ContentAlignment.MiddleCenter, UI.IconFontName);
         }
 
         private Chevron AddChevron(Control parent, int x, int y, Color color)
@@ -873,7 +886,7 @@ namespace ClimateSafe
             AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, titleBlue);
             AddText(sidebar, "Siap hari ini, lebih aman nanti", 80, 48, 172, 16, 7.5f, false, muted);
 
-            string[] glyphs = { "⌂", "✎", "☆", "☑", "↺", "▤" };
+            string[] glyphs = { Ico.Home, Ico.Edit, Ico.Star, Ico.CheckBox, Ico.History, Ico.Library };
             string[] names = { "Beranda", "Asesmen", "Rekomendasi", "Checklist", "Riwayat", "Edukasi" };
 
             for (int i = 0; i < names.Length; i++)
@@ -939,8 +952,27 @@ namespace ClimateSafe
 
             sidebarName = AddText(user, Session.DisplayName, 55, 10, 140, 18, 8.5f, true, ink);
 
-            RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
-            AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy, ContentAlignment.MiddleCenter);
+            if (Session.IsGuest)
+            {
+                // Catatan tamu 9,75pt tidak muat di pil 36x16, jadi dipakai teks biasa.
+                // Dua baris diperbolehkan: kartu memanjang ke bawah, tombol Keluar tetap di y 85.
+                int noteH;
+                using (Font noteFont = UI.Body(9.75f, FontStyle.Regular))
+                {
+                    noteH = TextRenderer.MeasureText(Session.UserCardNote, noteFont,
+                        new Size(133, 0), TextFormatFlags.WordBreak).Height;
+                }
+                int noteTop = noteH > 18 ? 24 : 30;
+                if (noteH > 18) sidebarName.Top = 4;
+                AddText(user, Session.UserCardNote, 55, noteTop, 133, noteH, 9.75f, false, muted);
+                user.Height = Math.Min(69, Math.Max(57, noteTop + noteH + 4));
+            }
+            else
+            {
+                RoundPanel badge = Card(user, 55, 30, 36, 16, 4, Color.FromArgb(226, 235, 250), Color.Empty);
+                AddAligned(badge, Session.RoleText, 0, 0, 36, 16, 7f, false, navy,
+                    ContentAlignment.MiddleCenter);
+            }
 
             AddChevron(user, 196, 20, muted);
             EventHandler openProfil = delegate (object sender, EventArgs e) { Nav.ShowProfil(this); };
@@ -949,7 +981,7 @@ namespace ClimateSafe
 
             // Tombol sekunder "Keluar": pola sama dengan sidebar panel admin.
             PillButton exit = new PillButton();
-            exit.Text = "Keluar";
+            exit.Text = Session.ExitLabel;
             exit.Radius = 10;
             exit.Fill = Color.White;
             exit.HoverFill = Theme.ChipHover;
