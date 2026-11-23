@@ -13,7 +13,8 @@ RUN dotnet publish ClimateSafe.Api/ClimateSafe.Api.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish/ ./
+COPY ClimateSafe.Api/railway-entrypoint.sh /app/railway-entrypoint.sh
 
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "ClimateSafe.Api.dll"]
+ENTRYPOINT ["/bin/sh", "/app/railway-entrypoint.sh"]

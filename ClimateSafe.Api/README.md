@@ -12,9 +12,11 @@ Jangan simpan kredensial dalam image atau repository. Database Supabase tetap
 memerlukan migrasi 000 sampai 007 yang dijalankan terpisah.
 
 Untuk koneksi Supabase gunakan SSL dengan verifikasi identitas server. Jika root
-CA tidak dipercaya oleh container, sediakan sertifikat CA yang benar di lingkungan
-service dan atur `Root Certificate`; path sertifikat Windows di komputer lokal
-tidak berlaku di container Linux. Uji `/health` untuk proses API dan `/api/hazards`
+CA tidak dipercaya oleh container, isi variabel Railway `SUPABASE_CA_CERT` dengan
+seluruh isi PEM dari sertifikat CA Supabase. Entrypoint menulisnya ke file sementara
+dan mengatur `PGSSLROOTCERT` untuk Npgsql. Jangan menambahkan `Root Certificate`
+di connection string karena akan mengesampingkan variabel tersebut; path sertifikat
+Windows di komputer lokal tidak berlaku di container Linux. Uji `/health` untuk proses API dan `/api/hazards`
 untuk akses database. Konfigurasi produksi dan sertifikat harus diuji pada Railway.
 
 Perhitungan skor dan prioritas menggunakan `ClimateSafe.Core`, yang juga
