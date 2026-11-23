@@ -249,6 +249,9 @@ namespace ClimateSafe
         public string? PendingHazard;
         private int gridBottom;
         private bool eduBuilt;
+        private int loadVersion;
+        private bool loadingContent;
+        private Label? loadingLabel;
 
         public FrmEdukasi()
         {
@@ -264,6 +267,7 @@ namespace ClimateSafe
                 RefreshUserCard();
                 LoadHazards();
             }
+            else if (!Visible) loadVersion++;
         }
 
         private void BuildEdukasi()
@@ -322,7 +326,6 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
-            LoadHazards();
         }
 
         private void LayoutPage()
@@ -340,20 +343,30 @@ namespace ClimateSafe
 
         // ---------- data ----------
 
-        private void LoadHazards()
+        private async void LoadHazards()
         {
             if (!eduBuilt || IsDisposed) return;
+            int version = ++loadVersion;
+            bool guest = Session.IsGuest;
+            loadingContent = false;
+            if (content != null) content.Visible = false;
+            if (loadingLabel != null) { eduPage.Controls.Remove(loadingLabel); loadingLabel.Dispose(); }
+            loadingLabel = AddText(eduPage, "Memuat data edukasi...", 0, ContentTop, 480, 30, 11f, false, muted);
 
             try
             {
-                IReadOnlyList<Hazard> loaded;
-                offlineHazards = false;
-                try { loaded = recommendationRepository.GetHazards(); }
-                catch (Exception) when (Session.IsGuest)
+                var result = await Task.Run(() =>
                 {
-                    offlineHazards = true;
-                    loaded = ClimateSafe.Core.GuestCatalog.Load().Hazards.Select(h => new Hazard(h.Id, h.Name)).ToList();
-                }
+                    try { return (Items: recommendationRepository.GetHazards(), Offline: false); }
+                    catch (Exception) when (guest)
+                    {
+                        IReadOnlyList<Hazard> local = ClimateSafe.Core.GuestCatalog.Load().Hazards.Select(h => new Hazard(h.Id, h.Name)).ToList();
+                        return (Items: local, Offline: true);
+                    }
+                });
+                if (IsDisposed || version != loadVersion || Session.IsGuest != guest) return;
+                IReadOnlyList<Hazard> loaded = result.Items;
+                offlineHazards = result.Offline;
                 hazards.Clear();
                 foreach (Hazard h in loaded) hazards.Add(h);
 
@@ -371,11 +384,13 @@ namespace ClimateSafe
                     selectedHazard = null;
                 }
 
-                LoadPublishedContent();
+                await LoadPublishedContent(version, guest);
+                if (IsDisposed || version != loadVersion) return;
                 RebuildContent();
             }
             catch (Exception ex)
             {
+                if (IsDisposed || version != loadVersion) return;
                 MessageBox.Show(this, "Edukasi belum dapat dimuat. " + ex.Message,
                     "Edukasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 hazards.Clear();
@@ -385,9 +400,18 @@ namespace ClimateSafe
                 educationError = "Data edukasi tidak dapat dimuat.";
                 RebuildContent();
             }
+            finally
+            {
+                if (!IsDisposed && version == loadVersion && loadingLabel != null)
+                {
+                    eduPage.Controls.Remove(loadingLabel);
+                    loadingLabel.Dispose();
+                    loadingLabel = null;
+                }
+            }
         }
 
-        private void LoadPublishedContent()
+        private async Task LoadPublishedContent(int version, bool guest)
         {
             int? selectedId = publishedContent?.ContentId;
             publishedContent = null;
@@ -399,11 +423,13 @@ namespace ClimateSafe
             try
             {
                 if (offlineHazards) { LoadOfflineEducation(hazard); return; }
-                publishedContents = ApiClient.Get<List<ApiEducation>>($"api/education/hazards/{hazard.HazardId}") ?? new();
+                var items = await Task.Run(() => ApiClient.Get<List<ApiEducation>>($"api/education/hazards/{hazard.HazardId}") ?? new());
+                if (IsDisposed || version != loadVersion) return;
+                publishedContents = items;
                 publishedContent = publishedContents.Find(x => x.ContentId == selectedId) ?? publishedContents.FirstOrDefault();
             }
-            catch (Exception) when (Session.IsGuest) { LoadOfflineEducation(hazard); }
-            catch (Exception ex) { educationError = "Materi tidak dapat dimuat. " + ex.Message; }
+            catch (Exception) when (guest) { if (!IsDisposed && version == loadVersion) LoadOfflineEducation(hazard); }
+            catch (Exception ex) { if (!IsDisposed && version == loadVersion) educationError = "Materi tidak dapat dimuat. " + ex.Message; }
         }
 
         private void LoadOfflineEducation(Hazard hazard)
@@ -496,7 +522,7 @@ namespace ClimateSafe
                 : GridTop + rows * HazardCardView.CardHeight + (rows - 1) * CardGap;
         }
 
-        private void SelectHazard(string hazardName)
+        private async void SelectHazard(string hazardName)
         {
             if (string.Equals(selectedHazard, hazardName, StringComparison.Ordinal))
             {
@@ -505,7 +531,9 @@ namespace ClimateSafe
 
             selectedHazard = hazardName;
             publishedContent = null;
-            LoadPublishedContent();
+            int version = ++loadVersion;
+            bool guest = Session.IsGuest;
+            loadingContent = true;
             foreach (HazardCardView card in cards)
             {
                 card.Selected = string.Equals(card.HazardName, selectedHazard, StringComparison.Ordinal);
@@ -513,17 +541,17 @@ namespace ClimateSafe
             }
 
             Point scroll = eduScroll.AutoScrollPosition;
-            eduScroll.SuspendLayout();
-            content.SuspendLayout();
             try
             {
+                BuildContentCard();
+                await LoadPublishedContent(version, guest);
+                if (IsDisposed || version != loadVersion) return;
+                loadingContent = false;
                 BuildContentCard();
             }
             finally
             {
-                content.ResumeLayout(true);
-                eduScroll.ResumeLayout(true);
-                eduScroll.AutoScrollPosition = new Point(-scroll.X, -scroll.Y);
+                if (!IsDisposed && version == loadVersion) eduScroll.AutoScrollPosition = new Point(-scroll.X, -scroll.Y);
             }
         }
 
@@ -550,7 +578,8 @@ namespace ClimateSafe
             Stretch(holder, content, 0, 0);
 
             int h;
-            if (selectedHazard == null) h = BuildHintCard(holder);
+            if (loadingContent) { AddText(holder, "Memuat materi edukasi...", 0, 0, 480, 30, 11f, false, muted); h = 60; }
+            else if (selectedHazard == null) h = BuildHintCard(holder);
             else
             {
                 int summaryTop = 0;
@@ -565,6 +594,7 @@ namespace ClimateSafe
 };
 articlePicker.SetItems(publishedContents.Cast<object>());
 articlePicker.SelectedIndex = publishedContents.IndexOf(publishedContent!);
+                    articlePicker.SelectedIndexChanged += (sender, args) =>
                     {
                         if (articlePicker.SelectedItem is ApiEducation selected && selected.ContentId != publishedContent?.ContentId)
                         {

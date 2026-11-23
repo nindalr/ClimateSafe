@@ -971,6 +971,8 @@ namespace ClimateSafe
         private Label weatherDetails;
         private DateTime weatherLastFetched = DateTime.MinValue;
         private bool weatherLoading;
+        private int savedDataVersion;
+        private Label? savedDataLoading;
 
         public FrmDashboard() : this(new ChecklistService())
         {
@@ -998,7 +1000,7 @@ namespace ClimateSafe
                 weatherTimer.Start();
                 _ = RefreshWeatherAsync();
             }
-            else if (!Visible) weatherTimer.Stop();
+            else if (!Visible) { weatherTimer.Stop(); savedDataVersion++; }
         }
 
         private async System.Threading.Tasks.Task RefreshWeatherAsync()
@@ -1029,12 +1031,20 @@ namespace ClimateSafe
             finally { weatherLoading = false; }
         }
 
-        internal void RefreshSavedData()
+        internal async void RefreshSavedData()
         {
+            int version = ++savedDataVersion;
+            bool guest = Session.IsGuest;
+            int userId = Session.CurrentUser?.UserId ?? 0;
+            cardScore.Visible = cardChecklist.Visible = cardPriority.Visible = false;
+            if (savedDataLoading != null) { dashPage.Controls.Remove(savedDataLoading); savedDataLoading.Dispose(); }
+            savedDataLoading = AddText(dashPage, "Memuat hasil asesmen...", 20, RowTopY + 25, 400, 30, 11f, false, muted);
             try
             {
-                latestSession = Session.IsGuest ? GuestSessionView.GetChecklistSession() : Session.CurrentUser == null ? null
-                    : checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
+                var loaded = guest ? GuestSessionView.GetChecklistSession() : userId == 0 ? null
+                    : await Task.Run(() => checklistService.GetSessions(userId).FirstOrDefault());
+                if (IsDisposed || version != savedDataVersion || Session.IsGuest != guest || (Session.CurrentUser?.UserId ?? 0) != userId) return;
+                latestSession = loaded;
                 dashPage.SuspendLayout();
                 cardScore.Dispose();
                 cardChecklist.Dispose();
@@ -1044,12 +1054,21 @@ namespace ClimateSafe
                 BuildPriorities(dashPage);
                 LayoutPage();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                if (IsDisposed || version != savedDataVersion) return;
                 MessageBox.Show(this, "Data asesmen belum dapat dimuat. Periksa koneksi API.",
                     "Dashboard", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            finally { dashPage.ResumeLayout(true); }
+            finally
+            {
+                if (!IsDisposed && version == savedDataVersion)
+                {
+                    if (savedDataLoading != null) { dashPage.Controls.Remove(savedDataLoading); savedDataLoading.Dispose(); savedDataLoading = null; }
+                    cardScore.Visible = cardChecklist.Visible = cardPriority.Visible = true;
+                    dashPage.ResumeLayout(true);
+                }
+            }
         }
 
         private void BuildDashboard()

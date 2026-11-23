@@ -88,6 +88,7 @@ namespace ClimateSafe
         private BufferedPanel content;
         private bool recBuilt;
         private int refreshVersion;
+        private Label? loadingLabel;
 
         public FrmRekomendasi()
         {
@@ -184,6 +185,9 @@ namespace ClimateSafe
             if (!recBuilt) return;
             int version = ++refreshVersion;
             int userId = Session.CurrentUser?.UserId ?? 0;
+            if (content != null) content.Visible = false;
+            if (loadingLabel != null) { recPage.Controls.Remove(loadingLabel); loadingLabel.Dispose(); }
+            loadingLabel = AddText(recPage, "Memuat rekomendasi...", 0, ContentTop, 500, 30, 11f, false, muted);
 
             ChecklistSession? session = null;
             IReadOnlyList<DimensionScore> scores = new List<DimensionScore>();
@@ -232,6 +236,15 @@ namespace ClimateSafe
                 }
                 catch (Exception)
                 {
+                }
+            }
+            finally
+            {
+                if (!IsDisposed && version == refreshVersion && loadingLabel != null)
+                {
+                    recPage.Controls.Remove(loadingLabel);
+                    loadingLabel.Dispose();
+                    loadingLabel = null;
                 }
             }
         }

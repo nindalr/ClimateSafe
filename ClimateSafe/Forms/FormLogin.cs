@@ -157,6 +157,7 @@ namespace ClimateSafe.Auth
         private readonly AuthService _auth = new AuthService();
         private readonly TextBox txtEmail = new TextBox(), txtPassword = new TextBox();
         private readonly Button btnLogin = new AuthRoundedButton(), btnRegister = new AuthRoundedButton();
+        private readonly Button btnGuest = new AuthRoundedButton();
         public FormLogin()
         {
             var card=AuthUi.Setup(this,"Login",630,false);
@@ -173,24 +174,31 @@ namespace ClimateSafe.Auth
             separator.TabStop = false;
             card.Controls.Add(separator);
             card.Controls.Add(new Panel { Bounds = new Rectangle(240,486,160,1), BackColor = AuthUi.Border, TabStop = false });
-            var guest=new AuthRoundedButton(); AuthUi.Button(card,guest,"Lanjut tanpa login",514,false);
-            guest.Click+=(_,_)=>{
+            AuthUi.Button(card,btnGuest,"Lanjut tanpa login",514,false);
+            btnGuest.Click+=(_,_)=>{
                 MessageBox.Show(this,"Asesmen tamu dapat digunakan tanpa internet. Hasil dan checklist hanya tersimpan selama aplikasi terbuka. Edukasi offline menggunakan materi bawaan yang mungkin tidak terbaru.","Tanpa Login",MessageBoxButtons.OK,MessageBoxIcon.Information);
                 Nav.Reset(); Session.CurrentUser=null; Session.IsGuest=true; Session.GuestAssessment=null; ApiClient.Token=null;
                 var form=new FrmPilihBahaya(); form.Show(); Hide();
             };
             AcceptButton=btnLogin; ActiveControl=txtEmail;
         }
-        private void btnLogin_Click(object? sender, EventArgs e)
+        private async void btnLogin_Click(object? sender, EventArgs e)
         {
             if(!AuthUi.ValidEmail(txtEmail.Text.Trim())) { AuthUi.Warn(this,"Masukkan alamat email yang valid."); txtEmail.Focus(); return; }
             if(string.IsNullOrWhiteSpace(txtPassword.Text)) { AuthUi.Warn(this,"Password wajib diisi."); txtPassword.Focus(); return; }
+            string email = txtEmail.Text.Trim(), password = txtPassword.Text;
+            btnLogin.Enabled = btnRegister.Enabled = btnGuest.Enabled = false;
+            txtEmail.Enabled = txtPassword.Enabled = false;
+            btnLogin.Text = "Sedang masuk...";
+            UseWaitCursor = true;
             try {
-                UserAccount? user=_auth.Login(txtEmail.Text.Trim(),txtPassword.Text);
+                UserAccount? user=await Task.Run(() => _auth.Login(email,password));
+                if (IsDisposed) { ApiClient.Token = null; return; }
                 if(user==null) { AuthUi.Warn(this,"Email/password salah atau akun nonaktif."); return; }
                 Session.IsGuest=false; Session.GuestAssessment=null;
                 Form main=user.CreateMainForm(); main.FormClosed+=(s,args)=>{user.Logout(); txtPassword.Clear(); Show();}; main.Show(); Hide();
-            } catch(Exception ex) { System.Diagnostics.Debug.WriteLine(ex); MessageBox.Show(this,"Login gagal. Periksa koneksi atau coba lagi.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Error); }
+            } catch(Exception ex) { if (!IsDisposed) { System.Diagnostics.Debug.WriteLine(ex); MessageBox.Show(this,"Login gagal. Periksa koneksi atau coba lagi.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Error); } }
+            finally { if (!IsDisposed) { btnLogin.Enabled = btnRegister.Enabled = btnGuest.Enabled = true; txtEmail.Enabled = txtPassword.Enabled = true; btnLogin.Text = "Masuk"; UseWaitCursor = false; } }
         }
         private void btnRegister_Click(object? sender,EventArgs e) { using var reg=new FormRegister(); reg.ShowDialog(this); }
     }
