@@ -19,7 +19,8 @@ internal static class ApiClient
 
     private static T? Send<T>(HttpMethod method, string path, object? body = null)
     {
-        string baseUrl = Environment.GetEnvironmentVariable("CLIMATESAFE_API_URL") ?? "http://localhost:5028";
+        string baseUrl = Environment.GetEnvironmentVariable("CLIMATESAFE_API_URL")
+            ?? "https://acceptable-generosity-production-90779b87.up.railway.app";
         if (!Uri.TryCreate(baseUrl.TrimEnd('/') + "/", UriKind.Absolute, out var baseUri) ||
             (baseUri.Scheme != Uri.UriSchemeHttps && !(baseUri.Scheme == Uri.UriSchemeHttp && baseUri.IsLoopback)))
             throw new InvalidOperationException("Alamat API harus menggunakan HTTPS, atau HTTP untuk localhost.");
