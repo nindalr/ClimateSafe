@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -74,7 +74,7 @@ namespace ClimateSafe
             input.TextChanged += delegate (object? s, EventArgs e) { RebuildBody(); };
 
             PillButton reload = AdminUi.MakeButton(this, "Muat Ulang", 0, SearchTop, AdminUi.FieldH,
-                Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 40);
+                AdminButtonKind.Secondary, 10f, 40);
             reload.Left = Width - reload.Width;
             AdminUi.PinRight(reload, this, 0);
             reload.Click += delegate (object? s, EventArgs e) { ReloadData(); };
@@ -288,7 +288,7 @@ namespace ClimateSafe
                 AdminUi.SuccessInk, ContentAlignment.MiddleLeft);
 
             PillButton close = AdminUi.MakeButton(card, "Tutup", 0, 8, 32,
-                Color.White, AdminUi.HoverBg, AdminUi.SuccessInk, Color.Empty, 9f, 28);
+                AdminButtonKind.Secondary, 9f, 28);
             close.Left = w - 20 - close.Width;
             AdminUi.PinRight(close, card, 20);
             close.Click += delegate (object? s, EventArgs e)
@@ -313,52 +313,70 @@ namespace ClimateSafe
                 24, 48, Math.Max(240, w - 48), 20, 9.5f, false, AdminUi.Muted);
 
             AdminUi.AddText(card, "Nama Pengguna", 24, 84, 200, 16, 9f, true, AdminUi.Muted);
-            int fieldW = Math.Min(420, Math.Max(240, w - 48));
-            TextBox input = AdminUi.MakeField(card, 24, 106, fieldW, "");
+            int nameTop = 106;
+            TextBox input = AdminUi.MakeField(card, 24, nameTop, Math.Max(240, w - 48), "");
             input.Text = item.Name;
             nameInput = input;
+            Control nameBox = (Control)input.Tag!;
 
-            int buttonsTop = 106 + AdminUi.FieldH + 20;
             bool self = item.Id == admin.UserId;
             bool active = string.Equals(item.Status, "Active", StringComparison.OrdinalIgnoreCase);
 
-            PillButton save = AdminUi.MakeButton(card, "Simpan Nama", 24, buttonsTop, AdminUi.ButtonH,
-                AdminUi.BtnBlue, AdminUi.BtnBlueHover, Color.White, Color.Empty, 10f, 44);
+            // Simpan Nama satu baris dengan kolom nama; kolom mengecil seukuran tombol.
+            PillButton save = AdminUi.MakeButton(card, "Simpan Nama", 24, nameTop, AdminUi.ButtonH,
+                AdminButtonKind.Primary, 10f, 44, false);
             saveButton = save;
-            AdminUi.SetEnabled(save, false, AdminUi.BtnBlue, AdminUi.BtnBlueHover, Color.White, Color.Empty);
             save.Click += delegate (object? s, EventArgs e) { SaveName(item); };
 
             input.TextChanged += delegate (object? s, EventArgs e)
             {
                 string value = (input.Text ?? "").Trim();
-                bool on = value.Length > 0 && !string.Equals(value, item.Name, StringComparison.Ordinal);
-                AdminUi.SetEnabled(save, on, AdminUi.BtnBlue, AdminUi.BtnBlueHover,
-                    Color.White, Color.Empty);
+                AdminUi.StyleButton(save, AdminButtonKind.Primary,
+                    value.Length > 0 && !string.Equals(value, item.Name, StringComparison.Ordinal));
             };
 
-            string toggleText = active ? "Nonaktifkan Akun" : "Aktifkan Akun";
-            PillButton toggle = AdminUi.MakeButton(card, toggleText, save.Right + 12, buttonsTop,
-                AdminUi.ButtonH, Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 44);
-            AdminUi.SetEnabled(toggle, !self, Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line);
-            toggle.Click += delegate (object? s, EventArgs e) { ToggleStatus(item, active); };
+            // ---- tindakan akun, dipisah garis dari baris nama ----
+            Panel actionLine = AdminUi.Divider(card, nameTop + AdminUi.FieldH + 20, w);
+            AdminUi.Stretch(actionLine, card, 0, 0);
 
-            PillButton remove = AdminUi.MakeButton(card, "Hapus Akun", toggle.Right + 12, buttonsTop,
-                AdminUi.ButtonH, Color.White, AdminUi.DangerBg, AdminUi.DangerInk, AdminUi.DangerInk,
-                10f, 44);
-            AdminUi.SetEnabled(remove, !self, Color.White, AdminUi.DangerBg, AdminUi.DangerInk,
-                AdminUi.DangerInk);
-            remove.Click += delegate (object? s, EventArgs e) { DeleteUser(item); };
+            int actionsTop = nameTop + AdminUi.FieldH + 40;
+            AdminUi.AddText(card, "Tindakan akun", 24, actionsTop, 200, 16, 9f, true, AdminUi.Muted);
 
-            PillButton reset = AdminUi.MakeButton(card, "Reset Password", 24, buttonsTop + AdminUi.ButtonH + 12,
-                AdminUi.ButtonH, Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 44);
+            int buttonsTop = actionsTop + 22;
+            PillButton reset = AdminUi.MakeButton(card, "Reset Password", 24, buttonsTop,
+                AdminUi.ButtonH, AdminButtonKind.Secondary, 10f, 44);
             reset.Click += delegate (object? s, EventArgs e) { ResetPassword(item); };
 
-            int bottom = reset.Bottom;
+            string toggleText = active ? "Nonaktifkan Akun" : "Aktifkan Akun";
+            PillButton toggle = AdminUi.MakeButton(card, toggleText, 24, buttonsTop,
+                AdminUi.ButtonH, AdminButtonKind.Secondary, 10f, 44, !self);
+            toggle.Click += delegate (object? s, EventArgs e) { ToggleStatus(item, active); };
+
+            PillButton remove = AdminUi.MakeButton(card, "Hapus Akun", 24, buttonsTop,
+                AdminUi.ButtonH, AdminButtonKind.Danger, 10f, 44, !self);
+            remove.Click += delegate (object? s, EventArgs e) { DeleteUser(item); };
+
+            void LayoutRows()
+            {
+                int cw = Math.Max(360, card.Width);
+                int fieldW = Math.Max(200, cw - 48 - save.Width - 12);
+                nameBox.Width = fieldW;
+                save.Left = 24 + fieldW + 12;
+                remove.Left = cw - 24 - remove.Width;
+                toggle.Left = remove.Left - 12 - toggle.Width;
+            }
+
+            LayoutRows();
+            card.Resize += delegate (object? s, EventArgs e) { LayoutRows(); };
+
+            int bottom = buttonsTop + AdminUi.ButtonH;
             if (self)
             {
-                AdminUi.AddText(card, "Tidak bisa menonaktifkan atau menghapus akun sendiri.",
-                    24, bottom + 12, Math.Max(240, w - 48), 18, 9f, false, AdminUi.Muted);
-                bottom += 12 + 18;
+                Label reason = AdminUi.AddAligned(card, "Tidak bisa menonaktifkan atau menghapus akun sendiri.",
+                    24, bottom + 8, Math.Max(240, w - 48), 18, 9f, false, AdminUi.Muted,
+                    ContentAlignment.TopRight);
+                AdminUi.Stretch(reason, card, 24, 24);
+                bottom += 8 + 18;
             }
 
             int h = bottom + 24;
@@ -389,7 +407,7 @@ namespace ClimateSafe
             if (buttonText != null && action != null)
             {
                 PillButton button = AdminUi.MakeButton(card, buttonText, 0, 180, AdminUi.ButtonH,
-                    Color.White, AdminUi.HoverBg, AdminUi.Navy, AdminUi.Line, 10f, 44);
+                    AdminButtonKind.Secondary, 10f, 44);
                 button.Click += action;
                 AdminUi.CenterIn(button, card);
             }
@@ -422,7 +440,7 @@ namespace ClimateSafe
 
             int buttonTop = 58 + Math.Max(1, lines.Count) * 18 + 16;
             PillButton retry = AdminUi.MakeButton(card, "Coba Lagi", 24, buttonTop, AdminUi.ButtonH,
-                AdminUi.BtnBlue, AdminUi.BtnBlueHover, Color.White, Color.Empty, 10f, 44);
+                AdminButtonKind.Secondary, 10f, 44);
             retry.Click += delegate (object? s, EventArgs e) { ReloadData(); };
 
             int h = buttonTop + AdminUi.ButtonH + 24;

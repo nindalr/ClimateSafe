@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace ClimateSafe
 {
@@ -38,6 +38,21 @@ namespace ClimateSafe
         public static readonly Color PillBlueInk = Color.FromArgb(47, 95, 148);
         public static readonly Color ReadOnlyBg = Color.FromArgb(244, 247, 252);
         public static readonly Color StepIdle = Color.FromArgb(240, 244, 250);
+
+        // Tombol aksi utama (CTA). Coral lama tetap untuk menu aktif, lencana, dan angka.
+        public static readonly Color CtaFill = Color.FromArgb(192, 75, 58);
+        public static readonly Color CtaHover = Color.FromArgb(172, 62, 47);
+        public static readonly Color CtaPressed = Color.FromArgb(150, 52, 40);
+
+        // Isi tombol aksi utama: coral terang dengan teks gelap.
+        // Kontras CtaBtnText di atas CtaBtnFill 6,4:1; di atas CtaBtnPressed 4,6:1.
+        public static readonly Color CtaBtnFill = Color.FromArgb(235, 122, 104);
+        public static readonly Color CtaBtnHover = Color.FromArgb(226, 108, 90);
+        public static readonly Color CtaBtnPressed = Color.FromArgb(210, 92, 74);
+        public static readonly Color CtaBtnText = Color.FromArgb(15, 23, 42);
+        public static readonly Color FieldBorder = Color.FromArgb(120, 136, 158);
+        public static readonly Color FieldBorderHover = Color.FromArgb(100, 116, 139);
+        public static readonly Color FieldFill = Color.FromArgb(248, 250, 252);
 
         public const int SidebarWidth = 256;
     }

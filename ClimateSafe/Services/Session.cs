@@ -15,6 +15,14 @@ namespace ClimateSafe
         public static string RoleText =>
             CurrentUser == null ? "Tamu" : CurrentUser.Role.ToString();
 
+        // Baris kedua kartu pengguna di sidebar dan label tombol Keluar. RoleText tetap
+        // seperti semula karena masih dipakai pil peran kecil di sidebar dan halaman Profil.
+        public static string UserCardNote =>
+            IsGuest ? "Mode Tamu · data tidak disimpan" : RoleText;
+
+        public static string ExitLabel =>
+            IsGuest ? "Keluar dari Mode Tamu" : "Keluar";
+
         public static string FirstName
         {
             get

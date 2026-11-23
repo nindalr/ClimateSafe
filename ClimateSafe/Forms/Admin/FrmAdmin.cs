@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -120,6 +120,8 @@ namespace ClimateSafe
                 return;
             }
 
+            // Halaman baru selalu mulai dari atas, juga saat halaman lama sedang di-scroll.
+            contentScroll.AutoScrollPosition = new Point(0, 0);
             contentScroll.SuspendLayout();
             try
             {
@@ -151,6 +153,7 @@ namespace ClimateSafe
                 page.Top = AdminUi.PagePad;
                 page.Left = AdminUi.PagePad;
                 contentScroll.Controls.Add(page);
+                page.Top = AdminUi.PagePad;
                 currentPage = page;
             }
             finally
@@ -185,7 +188,7 @@ namespace ClimateSafe
             AdminUi.AddText(sidebar, "ClimateSafe", 80, 21, 170, 26, 13f, true, AdminUi.TitleBlue);
             AdminUi.AddText(sidebar, "Panel Admin", 80, 48, 172, 16, 7.5f, false, AdminUi.Muted);
 
-            string[] glyphs = { "☺", "▤", "↺" };
+            string[] glyphs = { Ico.People, Ico.Page, Ico.Report };
             string[] names = { "Kelola Pengguna", "Kelola Konten", "Log & Monitoring" };
 
             for (int i = 0; i < names.Length; i++)
