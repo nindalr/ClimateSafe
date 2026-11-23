@@ -55,10 +55,7 @@ server. Menu riwayat dan profil memerlukan login. Jika API edukasi tidak dapat
 dihubungi, tamu dapat membaca materi bawaan yang mungkin belum terbaru; jika API
 tersedia, halaman Edukasi menampilkan materi terpublikasi dari server.
 
-Informasi akun admin:
-
-- Email: [Isi email admin]
-- Password: [Isi password admin]
+Informasi akses admin disampaikan melalui panduan yang diberikan kepada admin.
 
 ## Cara Menggunakan Aplikasi
 
