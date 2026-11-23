@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -57,7 +59,7 @@ namespace ClimateSafe.Auth
         internal static bool ValidEmail(string email) => MailAddress.TryCreate(email,out var address) && string.Equals(address.Address,email,StringComparison.OrdinalIgnoreCase);
         internal static void Warn(Form f,string message) => MessageBox.Show(f,message,"ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Warning);
     }
-    // Native Button behavior, with custom painting to avoid the square WinForms focus border.
+
     internal sealed class AuthRoundedButton : Button
     {
         private bool _hover;
@@ -74,7 +76,6 @@ namespace ClimateSafe.Auth
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            // Do not call base.OnPaint: it draws a rectangular focus/default outline.
             var g = e.Graphics;
             g.Clear(Parent?.BackColor ?? Color.White);
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -95,7 +96,6 @@ namespace ClimateSafe.Auth
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
                 TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
 
-            // Keep keyboard focus visible, but use an inset rounded stroke.
             if (Focused && Enabled)
             {
                 using var focus = AuthUi.RoundedPath(new RectangleF(2f, 2f, Width - 4f, Height - 4f), Math.Max(1, CornerRadius - 2));
@@ -116,7 +116,6 @@ namespace ClimateSafe.Auth
         protected override void OnEnabledChanged(EventArgs e) { base.OnEnabledChanged(e); Invalidate(); }
     }
 
-    // Small vector sunrise mark inspired by the dashboard reference; no external asset required.
     internal sealed class ClimateBrandIcon : Control
     {
         public ClimateBrandIcon()
@@ -157,6 +156,8 @@ namespace ClimateSafe.Auth
         private readonly AuthService _auth = new AuthService();
         private readonly TextBox txtEmail = new TextBox(), txtPassword = new TextBox();
         private readonly Button btnLogin = new AuthRoundedButton(), btnRegister = new AuthRoundedButton();
+        private readonly Panel suggestPanel = new Panel();
+
         public FormLogin()
         {
             var card=AuthUi.Setup(this,"Login",630,false);
@@ -166,7 +167,6 @@ namespace ClimateSafe.Auth
             AuthUi.Field(card,txtPassword,"Password","Masukkan password",272,true);
             AuthUi.Button(card,btnLogin,"Masuk",370); btnLogin.Click+=btnLogin_Click;
             AuthUi.Button(card,btnRegister,"Belum punya akun? Daftar",422,false); btnRegister.Click+=btnRegister_Click;
-            // Separate guest access from account authentication.
             card.Controls.Add(new Panel { Bounds = new Rectangle(32,486,160,1), BackColor = AuthUi.Border, TabStop = false });
             var separator = AuthUi.Label("atau",192,475,48,23,10,AuthUi.Muted);
             separator.TextAlign = ContentAlignment.MiddleCenter;
@@ -179,8 +179,111 @@ namespace ClimateSafe.Auth
                 Nav.Reset(); Session.CurrentUser=null; Session.IsGuest=true; Session.GuestAssessment=null; ApiClient.Token=null;
                 var form=new FrmPilihBahaya(); form.Show(); Hide();
             };
+            BuildSuggestions(card);
             AcceptButton=btnLogin; ActiveControl=txtEmail;
         }
+
+        private void BuildSuggestions(Panel card)
+        {
+            suggestPanel.Bounds = new Rectangle(32, 260, 368, 10);
+            suggestPanel.BackColor = AuthUi.Border;
+            suggestPanel.Visible = false;
+            suggestPanel.TabStop = false;
+            card.Controls.Add(suggestPanel);
+            suggestPanel.BringToFront();
+
+            card.MouseDown += (_, _) => HideSuggestions();
+            txtEmail.Enter += (_, _) => ShowSuggestions();
+            txtEmail.Click += (_, _) => ShowSuggestions();
+            txtEmail.TextChanged += (_, _) => ShowSuggestions();
+            txtEmail.Leave += (_, _) => HideSuggestions();
+            txtEmail.KeyDown += (_, e) =>
+            {
+                if (e.KeyCode == Keys.Escape) HideSuggestions();
+            };
+        }
+
+        private void HideSuggestions()
+        {
+            suggestPanel.Visible = false;
+        }
+
+        private void ShowSuggestions()
+        {
+            string query = txtEmail.Text.Trim();
+            List<string> items = RecentAccounts.Load()
+                .Where(x => (query.Length == 0 || x.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                            && !string.Equals(x, query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (Control old in suggestPanel.Controls.Cast<Control>().ToList())
+            {
+                suggestPanel.Controls.Remove(old);
+                old.Dispose();
+            }
+
+            if (items.Count == 0 || !txtEmail.Focused)
+            {
+                suggestPanel.Visible = false;
+                return;
+            }
+
+            const int rowH = 38;
+            for (int i = 0; i < items.Count; i++)
+            {
+                string email = items[i];
+                int top = 1 + i * rowH;
+
+                var row = new Label
+                {
+                    Text = "   " + email,
+                    Bounds = new Rectangle(1, top, 332, rowH),
+                    Font = AuthUi.Font(10),
+                    ForeColor = AuthUi.Ink,
+                    BackColor = Color.White,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Cursor = Cursors.Hand,
+                    UseMnemonic = false
+                };
+                var del = new Label
+                {
+                    Text = "×",
+                    Bounds = new Rectangle(333, top, 34, rowH),
+                    Font = AuthUi.Font(13),
+                    ForeColor = AuthUi.Muted,
+                    BackColor = Color.White,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Cursor = Cursors.Hand,
+                    UseMnemonic = false
+                };
+
+                row.MouseEnter += (_, _) => { row.BackColor = AuthUi.Bg; del.BackColor = AuthUi.Bg; };
+                row.MouseLeave += (_, _) => { row.BackColor = Color.White; del.BackColor = Color.White; };
+                del.MouseEnter += (_, _) => { row.BackColor = AuthUi.Bg; del.BackColor = AuthUi.Bg; del.ForeColor = AuthUi.Coral; };
+                del.MouseLeave += (_, _) => { row.BackColor = Color.White; del.BackColor = Color.White; del.ForeColor = AuthUi.Muted; };
+
+                row.MouseDown += (_, _) =>
+                {
+                    txtEmail.Text = email;
+                    HideSuggestions();
+                    txtPassword.Focus();
+                };
+                del.MouseDown += (_, _) =>
+                {
+                    RecentAccounts.Remove(email);
+                    BeginInvoke((Action)ShowSuggestions);
+                };
+
+                suggestPanel.Controls.Add(row);
+                suggestPanel.Controls.Add(del);
+            }
+
+            suggestPanel.Height = items.Count * rowH + 2;
+            AuthUi.Round(suggestPanel, 8);
+            suggestPanel.Visible = true;
+            suggestPanel.BringToFront();
+        }
+
         private void btnLogin_Click(object? sender, EventArgs e)
         {
             if(!AuthUi.ValidEmail(txtEmail.Text.Trim())) { AuthUi.Warn(this,"Masukkan alamat email yang valid."); txtEmail.Focus(); return; }
@@ -188,10 +291,12 @@ namespace ClimateSafe.Auth
             try {
                 UserAccount? user=_auth.Login(txtEmail.Text.Trim(),txtPassword.Text);
                 if(user==null) { AuthUi.Warn(this,"Email/password salah atau akun nonaktif."); return; }
+                RecentAccounts.Add(txtEmail.Text.Trim());
                 Session.IsGuest=false; Session.GuestAssessment=null;
                 Form main=user.CreateMainForm(); main.FormClosed+=(s,args)=>{user.Logout(); txtPassword.Clear(); Show();}; main.Show(); Hide();
             } catch(Exception ex) { System.Diagnostics.Debug.WriteLine(ex); MessageBox.Show(this,"Login gagal. Periksa koneksi atau coba lagi.","ClimateSafe",MessageBoxButtons.OK,MessageBoxIcon.Error); }
         }
+
         private void btnRegister_Click(object? sender,EventArgs e) { using var reg=new FormRegister(); reg.ShowDialog(this); }
     }
 }
