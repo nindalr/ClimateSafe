@@ -57,8 +57,8 @@ tersedia, halaman Edukasi menampilkan materi terpublikasi dari server.
 
 Informasi akun admin:
 
-- Email: [Isi email admin]
-- Password: [Isi password admin]
+- Email: admin@admin.com
+- Password: admin123
 
 ## Cara Menggunakan Aplikasi
 
