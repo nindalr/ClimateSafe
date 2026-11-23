@@ -14,6 +14,42 @@ namespace ClimateSafe
         Quiet
     }
 
+    internal class SearchIcon : Control
+    {
+        public Color LineColor = Color.FromArgb(100, 116, 139);
+
+        public SearchIcon()
+        {
+            SetStyle(ControlStyles.UserPaint |
+                     ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer |
+                     ControlStyles.ResizeRedraw |
+                     ControlStyles.SupportsTransparentBackColor, true);
+            BackColor = Color.Transparent;
+            TabStop = false;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (Width < 10 || Height < 10) return;
+
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            float s = Math.Min(Width, Height);
+            float d = s * 0.62f;
+            using (Pen p = new Pen(LineColor, 1.8f))
+            {
+                p.StartCap = LineCap.Round;
+                p.EndCap = LineCap.Round;
+                g.DrawEllipse(p, 1.5f, 1.5f, d, d);
+                float c = 1.5f + d * 0.5f + d * 0.5f * 0.7071f;
+                g.DrawLine(p, c, c, s - 2f, s - 2f);
+            }
+        }
+    }
+
     internal static class AdminUi
     {
         public static readonly Color Coral = Color.FromArgb(235, 122, 104);
@@ -252,9 +288,10 @@ namespace ClimateSafe
             };
         }
 
-        public static TextBox MakeField(Control parent, int x, int y, int w, string hint)
+        public static TextBox MakeField(Control parent, int x, int y, int w, string hint, bool search = false)
         {
             RoundPanel box = Card(parent, x, y, w, FieldH, 8, Theme.FieldFill, Theme.FieldBorder);
+            int left = search ? 44 : 14;
 
             TextBox input = new TextBox();
             input.BorderStyle = BorderStyle.None;
@@ -265,15 +302,26 @@ namespace ClimateSafe
             input.Tag = box;
             box.Controls.Add(input);
 
-            Label placeholder = AddAligned(box, hint, 14, 0, Math.Max(40, w - 28), FieldH, 10f, false,
+            if (search)
+            {
+                SearchIcon icon = new SearchIcon();
+                icon.Bounds = new Rectangle(16, (FieldH - 18) / 2, 18, 18);
+                box.Controls.Add(icon);
+                icon.Click += delegate (object? s, EventArgs e) { input.Focus(); };
+            }
+
+            Label placeholder = AddAligned(box, hint, left, 0, Math.Max(40, w - left - 14), FieldH, 10f, false,
                 Muted, ContentAlignment.MiddleLeft);
             placeholder.Visible = string.IsNullOrEmpty(input.Text);
+            placeholder.Cursor = Cursors.IBeam;
+            placeholder.BringToFront();
+            placeholder.Click += delegate (object? s, EventArgs e) { input.Focus(); };
 
             void Place()
             {
                 int h = input.PreferredHeight;
-                input.SetBounds(14, Math.Max(0, (box.Height - h) / 2), Math.Max(40, box.Width - 28), h);
-                placeholder.SetBounds(14, 0, Math.Max(40, box.Width - 28), box.Height);
+                input.SetBounds(left, Math.Max(0, (box.Height - h) / 2), Math.Max(40, box.Width - left - 14), h);
+                placeholder.SetBounds(left, 0, Math.Max(40, box.Width - left - 14), box.Height);
             }
 
             Place();
