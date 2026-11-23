@@ -37,7 +37,10 @@ $env:CLIMATESAFE_API_URL = 'http://localhost:5028'
 dotnet run --project ClimateSafe/ClimateSafe.csproj
 ```
 
-Alamat localhost dipakai secara default jika variabel tidak diatur. Untuk server selain localhost, gunakan HTTPS. Pengguna desktop tidak perlu memasukkan kredensial PostgreSQL.
+Jika variabel tidak diatur, aplikasi menggunakan alamat API Railway bawaan. Untuk
+pengembangan lokal, tetapkan `CLIMATESAFE_API_URL` seperti contoh di atas. Untuk
+server selain localhost, gunakan HTTPS. Pengguna desktop tidak perlu memasukkan
+kredensial PostgreSQL.
 
 ### Langkah 4. Login ke Aplikasi
 
