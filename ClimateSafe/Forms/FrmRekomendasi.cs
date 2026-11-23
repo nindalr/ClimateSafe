@@ -87,6 +87,7 @@ namespace ClimateSafe
         private BufferedPanel recPage;
         private BufferedPanel content;
         private bool recBuilt;
+        private int refreshVersion;
 
         public FrmRekomendasi()
         {
@@ -102,6 +103,7 @@ namespace ClimateSafe
                 RefreshUserCard();
                 RefreshData();
             }
+            else if (!Visible) refreshVersion++;
         }
 
         private void BuildRekomendasi()
@@ -160,7 +162,6 @@ namespace ClimateSafe
 
             ResumeLayout(true);
             LayoutPage();
-            RefreshData();
         }
 
         private void LayoutPage()
@@ -178,16 +179,17 @@ namespace ClimateSafe
 
         // ---------- data ----------
 
-        private void RefreshData()
+        private async void RefreshData()
         {
             if (!recBuilt) return;
+            int version = ++refreshVersion;
+            int userId = Session.CurrentUser?.UserId ?? 0;
 
             ChecklistSession? session = null;
             IReadOnlyList<DimensionScore> scores = new List<DimensionScore>();
             IReadOnlyList<Recommendation> recommendations = new List<Recommendation>();
             int hazardId = 0;
 
-            recPage.SuspendLayout();
             try
             {
                 if (Session.IsGuest)
@@ -197,26 +199,31 @@ namespace ClimateSafe
                     recommendations = GuestSessionView.GetRecommendations();
                     hazardId = Session.GuestAssessment?.HazardId ?? 0;
                 }
-                else if (Session.CurrentUser != null)
+                else if (userId != 0)
                 {
-                    session = checklistService.GetSessions(Session.CurrentUser.UserId).FirstOrDefault();
-                    if (session != null)
+                    var result = await Task.Run(() =>
                     {
-                        scores = recommendationRepository.GetDimensionScores(
-                            Session.CurrentUser.UserId, session.AssessmentId);
-
-                        foreach (DimensionScore s in scores)
-                        {
-                            hazardId = s.HazardId;
-                        }
-                        recommendations = recommendationRepository.GetRecommendations(session.AssessmentId);
+                        var latest = checklistService.GetSessions(userId).FirstOrDefault();
+                        return (Session: latest, Detail: latest == null ? null : RecommendationRepository.GetDetail(latest.AssessmentId));
+                    });
+                    if (IsDisposed || version != refreshVersion || Session.CurrentUser?.UserId != userId) return;
+                    session = result.Session;
+                    if (result.Detail != null)
+                    {
+                        var detail = result.Detail;
+                        hazardId = detail.Assessment.HazardId;
+                        scores = detail.Dimensions.Select(d => new DimensionScore(hazardId, d.DimensionId,
+                            d.DimensionName, d.Score, d.PassingThreshold)).ToList();
+                        recommendations = detail.Recommendations.Select(r =>
+                            new Recommendation(r.RecommendationId, r.Description, r.Priority)).ToList();
                     }
                 }
 
                 RebuildContent(session, scores, recommendations, hazardId);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                if (IsDisposed || version != refreshVersion) return;
                 MessageBox.Show(this, "Data rekomendasi belum dapat dimuat. Periksa koneksi API.",
                     "Rekomendasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 try
@@ -227,7 +234,6 @@ namespace ClimateSafe
                 {
                 }
             }
-            finally { recPage.ResumeLayout(true); }
         }
 
         private void RebuildContent(ChecklistSession? session, IReadOnlyList<DimensionScore> scores,
