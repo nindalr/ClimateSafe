@@ -603,6 +603,15 @@ namespace ClimateSafe
         private string filter = AllFilter;
         private int openId;
         private bool riwBuilt;
+        private int loadVersion;
+        private int detailVersion;
+        private Label? loadingLabel;
+
+        private void SetLoading(string? message)
+        {
+            if (loadingLabel != null) { riwPage.Controls.Remove(loadingLabel); loadingLabel.Dispose(); loadingLabel = null; }
+            if (message != null) loadingLabel = AddText(riwPage, message, 600, 65, 480, 28, 10f, false, muted);
+        }
 
         public FrmRiwayat() : this(new ChecklistService(), new RecommendationRepository(),
             new AssessmentHistoryRepository())
@@ -633,6 +642,7 @@ namespace ClimateSafe
                 // Mode Tamu: tidak ada riwayat tersimpan, jadi data tidak dimuat.
                 if (!Session.IsGuest) LoadSessions();
             }
+            else if (!Visible) { loadVersion++; detailVersion++; }
         }
 
         private void BuildRiwayat()
@@ -692,7 +702,6 @@ namespace ClimateSafe
             ResumeLayout(true);
             LayoutPage();
             if (Session.IsGuest) BuildGuestContent();
-            else LoadSessions();
         }
 
         private void LayoutPage()
@@ -710,15 +719,21 @@ namespace ClimateSafe
 
         // ---------- data ----------
 
-        private void LoadSessions()
+        private async void LoadSessions()
         {
             if (!riwBuilt || IsDisposed) return;
+            int version = ++loadVersion;
+            detailVersion++;
+            int userId = CurrentUserId;
+            SetLoading("Memuat riwayat asesmen...");
+            if (content != null) content.Visible = false;
 
             try
             {
-                IReadOnlyList<ChecklistSession> loaded = CurrentUserId == 0
+                IReadOnlyList<ChecklistSession> loaded = userId == 0
                     ? new List<ChecklistSession>()
-                    : checklistService.GetSessions(CurrentUserId);
+                    : await Task.Run(() => checklistService.GetSessions(userId));
+                if (IsDisposed || version != loadVersion || CurrentUserId != userId) return;
 
                 sessions.Clear();
                 sessions.AddRange(loaded.OrderByDescending(s => s.CreatedAt)
@@ -734,6 +749,7 @@ namespace ClimateSafe
             }
             catch (Exception ex)
             {
+                if (IsDisposed || version != loadVersion) return;
                 MessageBox.Show(this, "Riwayat belum dapat dimuat. " + ex.Message,
                     "Riwayat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 sessions.Clear();
@@ -741,8 +757,9 @@ namespace ClimateSafe
                 answerCache.Clear();
                 openId = 0;
                 filter = AllFilter;
-                if (content == null) RebuildContent();
+                RebuildContent();
             }
+            finally { if (!IsDisposed && version == loadVersion) SetLoading(null); }
         }
 
         private List<string> HazardFilters()
@@ -1010,25 +1027,35 @@ namespace ClimateSafe
             riwPage.Height = ContentTop + content.Height + 64;
         }
 
-        private void ToggleRow(int assessmentId)
+        private async void ToggleRow(int assessmentId)
         {
+            int version = ++detailVersion;
+            int userId = CurrentUserId;
+            SetLoading(null);
             if (openId != assessmentId)
             {
                 if (!dimensionCache.ContainsKey(assessmentId))
                 {
                     try
                     {
-                        var scores = recommendationRepository.GetDimensionScores(CurrentUserId, assessmentId).ToList();
-                        var answers = historyRepository.GetAnswers(CurrentUserId, assessmentId);
+                        SetLoading("Memuat detail asesmen...");
+                        var detail = await Task.Run(() => RecommendationRepository.GetDetail(assessmentId));
+                        if (IsDisposed || version != detailVersion || CurrentUserId != userId) return;
+                        var scores = detail.Dimensions.Select(d => new DimensionScore(detail.Assessment.HazardId,
+                            d.DimensionId, d.DimensionName, d.Score, d.PassingThreshold)).ToList();
+                        var answers = detail.Answers.Select(a => new AssessmentHistoryAnswer(
+                            a.DimensionName, a.QuestionText, a.SelectedAnswer, a.Score)).ToList();
                         dimensionCache[assessmentId] = scores;
                         answerCache[assessmentId] = answers;
                     }
                     catch (Exception ex)
                     {
+                        if (IsDisposed || version != detailVersion) return;
                         MessageBox.Show(this, "Riwayat belum dapat dimuat. " + ex.Message,
                             "Riwayat", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
+                    finally { if (!IsDisposed && version == detailVersion) SetLoading(null); }
                 }
                 openId = assessmentId;
             }
